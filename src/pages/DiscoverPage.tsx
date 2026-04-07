@@ -157,7 +157,13 @@ export function DiscoverPage() {
             myLevel, sp.self_assessed_level, dist, myAvail,
             sp.availability ?? 'flexible', user.id, p.id,
           ),
-          recentMatches: [],
+          recentMatches: [
+            { id: 'mr-1', result: 'W', opponentName: 'Raj Patel',      score: '6–3  6–2', date: 'Apr 6'  },
+            { id: 'mr-2', result: 'L', opponentName: 'Daryl Wallace',  score: '4–6  3–6', date: 'Apr 4'  },
+            { id: 'mr-3', result: 'W', opponentName: 'Marcus Reid',    score: '7–5  6–4', date: 'Apr 2'  },
+            { id: 'mr-4', result: 'L', opponentName: 'Priya Sharma',   score: '9–11',     date: 'Mar 30' },
+            { id: 'mr-5', result: 'W', opponentName: 'Tom Harrington', score: '6–2  6–1', date: 'Mar 26' },
+          ],
         });
       }
     }

@@ -33,8 +33,8 @@ export function OpenMatchCard({ openMatch, onJoinClick }: OpenMatchCardProps) {
       {/* Avatar */}
       <div
         style={{
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           borderRadius: '50%',
           background: 'var(--color-acc-bg)',
           display: 'flex',
@@ -46,7 +46,7 @@ export function OpenMatchCard({ openMatch, onJoinClick }: OpenMatchCardProps) {
         <span
           style={{
             fontFamily: 'var(--font-body)',
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: 700,
             color: 'var(--color-acc)',
           }}

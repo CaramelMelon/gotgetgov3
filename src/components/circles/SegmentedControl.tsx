@@ -29,6 +29,7 @@ export function SegmentedControl({ activeSegment, onSegmentChange }: SegmentedCo
         borderBottom: '1px solid var(--color-bdr)',
         padding: '0 16px',
         display: 'flex',
+        justifyContent: 'center',
         gap: 0,
       }}
     >

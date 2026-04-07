@@ -19,7 +19,7 @@ export function ChallengesSection({
   }
 
   return (
-    <section style={{ marginBottom: 24 }}>
+    <section style={{ marginBottom: 28, marginTop: 20 }}>
       <SectionHeader
         label="Challenges"
         linkText={onSeeAllClick ? "See All" : undefined}
