@@ -392,6 +392,8 @@ function WelcomeScreen({ onNavigate, onContinueAsGuest }: {
   onNavigate: (s: AuthScreen) => void;
   onContinueAsGuest: () => void;
 }) {
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   return (
     <div style={{
       position: 'absolute',
