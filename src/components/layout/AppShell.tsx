@@ -8,6 +8,7 @@ import { CreateMenu, type CreateMenuItemId } from './CreateMenu';
 type CreateMenuItem = CreateMenuItemId;
 import { SearchModal } from './SearchModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeContext } from '../../contexts/ThemeContext';
 import { FilterProvider, useFilters } from '../../contexts/FilterContext';
 import { NavVisibilityProvider, useNavVisibility } from '../../contexts/NavVisibilityContext';
 import { supabase } from '../../lib/supabase';
@@ -25,6 +26,8 @@ interface AppShellProps {
 function AppShellContent({ children }: AppShellProps) {
   const navigate = useNavigate();
   const { user, profile, isGuest, signOut } = useAuth();
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   const { updateFilters } = useFilters();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
@@ -162,7 +165,7 @@ function AppShellContent({ children }: AppShellProps) {
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
-              <img src="/logo.png" alt="GotGetGo" style={{ height: 28, width: 'auto', display: 'block' }} />
+              <img src={logoSrc} alt="GotGetGo" style={{ height: 28, width: 'auto', display: 'block' }} />
             </button>
             <DesktopNav unreadMessages={unreadMessages} />
           </div>

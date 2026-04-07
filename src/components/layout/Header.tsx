@@ -3,6 +3,7 @@ import { Search, Bell, Trophy, LogIn, User, Settings, LogOut } from 'lucide-reac
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
+import { useThemeContext } from '../../contexts/ThemeContext';
 import { NotificationBadge } from '../ui/NotificationBadge';
 import { getInitials } from '@/lib/avatar-utils';
 
@@ -16,6 +17,8 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
   const navigate = useNavigate();
   const { user, profile, isGuest, signOut } = useAuth();
   const { tutorialStep, registerTarget } = useGuestTutorial();
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   const avatarInitials = getInitials(profile?.full_name ?? 'Me');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -73,7 +76,7 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           aria-label="Home"
         >
-          <img src="/logo.png" alt="GotGetGo" style={{ height: 32, width: 'auto', display: 'block' }} />
+          <img src={logoSrc} alt="GotGetGo" style={{ height: 32, width: 'auto', display: 'block' }} />
         </button>
 
         {/* Right actions */}
