@@ -489,7 +489,7 @@ export async function fetchWeeklyMatches(
     }
   }
 
-  return results.map((result) => {
+  const realMatches: FDM[] = results.map((result) => {
     const userPlayer = (allPlayers as any[]).find(
       (p: any) => p.result_id === result.id && p.user_id === userId
     );
