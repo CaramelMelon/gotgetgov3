@@ -335,10 +335,9 @@ export function SchedulePage() {
           </h1>
         </div>
 
-        {/* Manage Availability icon */}
+        {/* Manage Availability button */}
         <button
           onClick={() => setAvailabilityModalOpen(true)}
-          title="Manage Availability"
           style={{
             width: 42, height: 42,
             borderRadius: 'var(--radius-full)',
@@ -349,7 +348,7 @@ export function SchedulePage() {
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
           }}
         >
-          <CalendarDays size={19} style={{ color: 'var(--color-acc)' }} />
+          <Clock size={19} style={{ color: 'var(--color-acc)' }} />
         </button>
       </div>
 

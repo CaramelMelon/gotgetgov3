@@ -19,7 +19,7 @@ export function OpenMatchesSection({
   }
 
   return (
-    <section style={{ marginBottom: 24 }}>
+    <section style={{ marginBottom: 28, marginTop: 4 }}>
       <SectionHeader
         label="Open Matches Near You"
         linkText={onSeeAllClick ? "See All" : undefined}

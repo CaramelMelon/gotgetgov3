@@ -18,11 +18,11 @@ export function SectionHeader({ label, linkText, onLinkClick }: SectionHeaderPro
       <span
         style={{
           fontFamily: 'var(--font-body)',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
-          color: 'var(--color-t3)',
+          color: 'var(--color-t2)',
           textTransform: 'uppercase',
-          letterSpacing: '0.1em',
+          letterSpacing: '0.08em',
         }}
       >
         {label}
