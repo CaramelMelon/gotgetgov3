@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, ChevronDown, Plus } from 'lucide-react';
 import { Header } from './Header';
 import { BottomTabBar } from './BottomTabBar';
 import { DesktopNav } from './DesktopNav';
@@ -8,6 +8,7 @@ import { CreateMenu, type CreateMenuItemId } from './CreateMenu';
 type CreateMenuItem = CreateMenuItemId;
 import { SearchModal } from './SearchModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeContext } from '../../contexts/ThemeContext';
 import { FilterProvider, useFilters } from '../../contexts/FilterContext';
 import { NavVisibilityProvider, useNavVisibility } from '../../contexts/NavVisibilityContext';
 import { supabase } from '../../lib/supabase';
@@ -25,6 +26,8 @@ interface AppShellProps {
 function AppShellContent({ children }: AppShellProps) {
   const navigate = useNavigate();
   const { user, profile, isGuest, signOut } = useAuth();
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   const { updateFilters } = useFilters();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
@@ -162,10 +165,36 @@ function AppShellContent({ children }: AppShellProps) {
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
-              <img src="/logo.png" alt="GotGetGo" style={{ height: 28, width: 'auto', display: 'block' }} />
+              <img src={logoSrc} alt="GotGetGo" style={{ height: 28, width: 'auto', display: 'block' }} />
             </button>
             <DesktopNav unreadMessages={unreadMessages} />
           </div>
+
+          {/* Center: Create button */}
+          <button
+            onClick={() => setIsCreateMenuOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 16px', borderRadius: 9999,
+              border: '1.5px solid var(--color-bdr)',
+              background: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+              color: 'var(--color-t2)',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-acc)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-acc)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-bdr)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)';
+            }}
+            aria-label="Create"
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Create
+          </button>
 
           <div className="flex items-center" style={{ gap: 4 }}>
             <DesktopIconButton onClick={() => setIsSearchOpen(true)} label="Search">
@@ -281,9 +310,8 @@ function AppShellContent({ children }: AppShellProps) {
       <main
         className={cn(
           'flex-1 min-h-0 overflow-y-auto overflow-x-hidden',
-          'lg:pt-16'
         )}
-        style={{ display: 'flex', flexDirection: 'column' }}
+        style={{ display: 'flex', flexDirection: 'column', paddingTop: 'var(--desktop-nav-height, 0px)' }}
       >
         {children}
       </main>

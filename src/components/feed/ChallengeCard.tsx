@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { FeedChallenge } from '@/types/feed';
 import { getInitials, formatRelativeTime } from '@/lib/feed-utils';
 
@@ -8,21 +8,15 @@ interface ChallengeCardProps {
 }
 
 export function ChallengeCard({ challenge, onRespondClick }: ChallengeCardProps) {
-  const { challenger, isNew, distance } = challenge;
+  const { challenger, isNew } = challenge;
   const { sport, confirmed_time, created_at } = challenge.challenge;
 
-  // Format sport name for display
   const sportName = sport.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-
-  // Get player initials for avatar
   const initials = getInitials(challenger.full_name);
-
-  // Get ELO rating from user sport profile (placeholder - would need to fetch)
   const eloRating = '1450'; // TODO: Fetch from user_sport_profiles
-
-  // Format date/time
   const dateTime = confirmed_time || created_at;
   const formattedTime = formatRelativeTime(dateTime);
+  const isExpired = dateTime ? new Date(dateTime) < new Date() : false;
 
   return (
     <div
@@ -33,237 +27,191 @@ export function ChallengeCard({ challenge, onRespondClick }: ChallengeCardProps)
         boxShadow: '0 1px 4px rgba(20,18,14,0.06), 0 6px 20px rgba(20,18,14,0.07)',
         padding: '13px 14px',
         marginBottom: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        opacity: isExpired ? 0.65 : 1,
+        transition: 'opacity 0.2s',
       }}
     >
+      {/* Avatar */}
       <div
         style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          background: 'var(--color-acc-bg)',
           display: 'flex',
-          alignItems: 'flex-start',
-          gap: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}
       >
-        {/* Avatar with initials */}
+        <span
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'var(--color-acc)',
+          }}
+        >
+          {initials}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Name row */}
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: '12px',
-            background: 'var(--color-acc-bg)',
-            border: '1px solid var(--color-acc)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            gap: 6,
+            marginBottom: 5,
           }}
         >
-          <span
+          <h3
             style={{
               fontFamily: 'var(--font-body)',
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--color-acc-dk)',
-            }}
-          >
-            {initials}
-          </span>
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Player name and New badge */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 4,
-            }}
-          >
-            <h3
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 16,
-                fontWeight: 700,
-                color: 'var(--color-t1)',
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {challenger.full_name}
-            </h3>
-            {isNew && (
-              <span
-                style={{
-                  padding: '2px 8px',
-                  borderRadius: 99,
-                  background: 'var(--color-acc)',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--color-t1)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em',
-                  flexShrink: 0,
-                }}
-              >
-                New
-              </span>
-            )}
-          </div>
-
-          {/* Sport, ELO, Distance */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              marginBottom: 10,
-              flexWrap: 'wrap',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--color-t2)',
-              }}
-            >
-              {sportName}
-            </span>
-            <span style={{ color: 'var(--color-t3)', fontSize: 13 }}>·</span>
-            <span
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--color-t2)',
-              }}
-            >
-              ELO {eloRating}
-            </span>
-            {distance > 0 && (
-              <>
-                <span style={{ color: 'var(--color-t3)', fontSize: 13 }}>·</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--color-t2)',
-                  }}
-                >
-                  {distance} mi
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Date/Time pills */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              flexWrap: 'wrap',
-            }}
-          >
-            {/* Time pill */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '4px 8px',
-                borderRadius: 99,
-                background: 'var(--color-surf-2)',
-                border: '1px solid var(--color-bdr)',
-              }}
-            >
-              <Clock size={12} style={{ color: 'var(--color-t2)' }} />
-              <span
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'var(--color-t2)',
-                }}
-              >
-                {formattedTime}
-              </span>
-            </div>
-
-            {/* Date pill (if confirmed_time exists) */}
-            {confirmed_time && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '4px 8px',
-                  borderRadius: 99,
-                  background: 'var(--color-surf-2)',
-                  border: '1px solid var(--color-bdr)',
-                }}
-              >
-                <Calendar size={12} style={{ color: 'var(--color-t2)' }} />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--color-t2)',
-                  }}
-                >
-                  {new Date(confirmed_time).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Respond button */}
-        <button
-          onClick={onRespondClick}
-          aria-label="Respond to challenge"
-          style={{
-            height: 36,
-            padding: '0 16px',
-            borderRadius: 99,
-            background: 'var(--color-acc)',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'background 0.2s',
-            flexShrink: 0,
-            alignSelf: 'center',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--color-acc-dk)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--color-acc)';
-          }}
-        >
-          <span
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 700,
               color: 'var(--color-t1)',
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            Respond
+            {challenger.full_name}
+          </h3>
+          {isNew && !isExpired && (
+            <span
+              style={{
+                padding: '2px 7px',
+                borderRadius: 99,
+                background: 'var(--color-acc-bg)',
+                border: '1px solid var(--color-acc)',
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--color-acc)',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.04em',
+                flexShrink: 0,
+              }}
+            >
+              New
+            </span>
+          )}
+          {isExpired && (
+            <span
+              style={{
+                padding: '2px 7px',
+                borderRadius: 99,
+                background: 'rgba(234,88,12,0.08)',
+                border: '1px solid rgba(234,88,12,0.25)',
+                fontSize: 10,
+                fontWeight: 700,
+                color: '#EA580C',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.04em',
+                flexShrink: 0,
+              }}
+            >
+              Expired
+            </span>
+          )}
+        </div>
+
+        {/* Meta row: sport pill + ELO chip + date */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            flexWrap: 'wrap' as const,
+          }}
+        >
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 99,
+              background: 'var(--color-surf-2)',
+              border: '1px solid var(--color-bdr)',
+              fontFamily: 'var(--font-body)',
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--color-t2)',
+              whiteSpace: 'nowrap' as const,
+            }}
+          >
+            {sportName}
           </span>
-        </button>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 99,
+              background: 'var(--color-acc-bg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--color-acc)',
+              whiteSpace: 'nowrap' as const,
+            }}
+          >
+            {eloRating}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Clock size={11} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'var(--color-t3)',
+              }}
+            >
+              {formattedTime}
+            </span>
+          </div>
+        </div>
       </div>
+
+      {/* Respond button */}
+      <button
+        onClick={onRespondClick}
+        disabled={isExpired}
+        aria-label="Respond to challenge"
+        style={{
+          height: 34,
+          padding: '0 14px',
+          borderRadius: 99,
+          background: isExpired ? 'var(--color-surf-2)' : 'var(--color-acc)',
+          border: isExpired ? '1px solid var(--color-bdr)' : 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: isExpired ? 'not-allowed' : 'pointer',
+          transition: 'background 0.2s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          if (!isExpired) e.currentTarget.style.background = 'var(--color-acc-dk)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isExpired) e.currentTarget.style.background = 'var(--color-acc)';
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: 13,
+            fontWeight: 700,
+            color: isExpired ? 'var(--color-t3)' : 'var(--color-t1)',
+          }}
+        >
+          Respond
+        </span>
+      </button>
     </div>
   );
 }

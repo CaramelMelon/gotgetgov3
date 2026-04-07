@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useIsDesktop } from '../../hooks/useIsDesktop';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { supabase } from '../../lib/supabase';
 import { haversineKm } from '../../lib/haversine';
 import { eloMatchScore, getLevelElo } from '../../lib/elo';
 import { FilterTriptych } from '../../components/layout/FilterTriptych';
+import type { FilterTriptychHandle } from '../../components/layout/FilterTriptych';
 import { InteractionBar } from '../../components/discover/InteractionBar';
 import { SwipeDeck } from '../../components/discover/SwipeDeck';
 import { EMMA_DISCOVER_PLAYER, EMMA_USER_ID } from '../../data/emmaDemoProfile';
@@ -57,7 +59,9 @@ const TEN_MINUTES = 10 * 60 * 1000;
 export function DiscoverPage() {
   const { user, profile, isGuest } = useAuth();
   const { tutorialStep, advanceTutorial, registerTarget, resetTutorial } = useGuestTutorial();
+  const isDesktop = useIsDesktop();
   const deckRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<FilterTriptychHandle>(null);
   const [players, setPlayers] = useState<DiscoverPlayer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -174,11 +178,11 @@ export function DiscoverPage() {
   // Load favorites on mount
   useEffect(() => {
     if (!user) return;
-    supabase.from('favorites')
-      .select('target_user_id')
-      .eq('user_id', user.id)
+    supabase.from('liked_players')
+      .select('liked_user_id')
+      .eq('liker_id', user.id)
       .then(({ data }) => {
-        if (data) setFavoriteIds(new Set(data.map((r: any) => r.target_user_id)));
+        if (data) setFavoriteIds(new Set(data.map((r: any) => r.liked_user_id)));
       });
   }, [user]);
 
@@ -252,20 +256,41 @@ export function DiscoverPage() {
     setLastSwipe(null);
   }, [lastSwipe, user, players]);
 
+  // Use a ref so handleFavorite always reads the latest favoriteIds without stale closure
+  const favoriteIdsRef = useRef(favoriteIds);
+  useEffect(() => { favoriteIdsRef.current = favoriteIds; }, [favoriteIds]);
+
   const handleFavorite = useCallback(async () => {
     const topPlayer = players.find(p => !swipedIds.has(p.id));
     if (!topPlayer || !user) return;
     const id = topPlayer.id;
-    if (favoriteIds.has(id)) {
+    const currentFavIds = favoriteIdsRef.current;
+    if (currentFavIds.has(id)) {
+      // Optimistic remove
       setFavoriteIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-      await supabase.from('favorites')
-        .delete().eq('user_id', user.id).eq('target_user_id', id).eq('sport', topPlayer.sport);
+      const { error } = await (supabase.from('liked_players') as any)
+        .delete()
+        .eq('liker_id', user.id)
+        .eq('liked_user_id', id)
+        .eq('sport', topPlayer.sport);
+      if (error) {
+        console.error('Failed to unlike player:', error);
+        setFavoriteIds(prev => new Set([...prev, id])); // rollback
+      }
     } else {
+      // Optimistic add
       setFavoriteIds(prev => new Set([...prev, id]));
-      await (supabase.from('favorites') as any)
-        .insert({ user_id: user.id, target_user_id: id, sport: topPlayer.sport });
+      const { error } = await (supabase.from('liked_players') as any)
+        .upsert(
+          { liker_id: user.id, liked_user_id: id, sport: topPlayer.sport },
+          { onConflict: 'liker_id,liked_user_id,sport' },
+        );
+      if (error) {
+        console.error('Failed to like player:', error);
+        setFavoriteIds(prev => { const n = new Set(prev); n.delete(id); return n; }); // rollback
+      }
     }
-  }, [players, swipedIds, favoriteIds, user]);
+  }, [players, swipedIds, user]);
 
   // Register deck container as spotlight target for swipe_card step
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -284,7 +309,29 @@ export function DiscoverPage() {
       ? [EMMA_DISCOVER_PLAYER, ...players.filter(p => p.id !== EMMA_USER_ID)]
       : players;
 
-  const topPlayer = displayPlayers.find(p => !swipedIds.has(p.id));
+  const unswiped = displayPlayers.filter(p => !swipedIds.has(p.id));
+  const topPlayer = unswiped[0] ?? null;
+
+  // Shuffle: pick a random unswiped player (weighted by compatibility) and move to front
+  const handleShuffle = useCallback(() => {
+    if (unswiped.length <= 1) return;
+    // Exclude current top, pick randomly from the rest weighted by compatibilityScore
+    const pool = unswiped.slice(1);
+    const totalScore = pool.reduce((s, p) => s + p.compatibilityScore, 0);
+    let rand = Math.random() * totalScore;
+    let picked = pool[pool.length - 1];
+    for (const p of pool) {
+      rand -= p.compatibilityScore;
+      if (rand <= 0) { picked = p; break; }
+    }
+    setPlayers(prev => {
+      const without = prev.filter(p => p.id !== picked.id);
+      const insertAt = without.findIndex(p => !swipedIds.has(p.id));
+      const next = [...without];
+      next.splice(insertAt === -1 ? 0 : insertAt, 0, picked);
+      return next;
+    });
+  }, [unswiped, swipedIds]);
 
   if (!user && !isGuest) {
     return (
@@ -313,32 +360,281 @@ export function DiscoverPage() {
   return (
     <>
       <FilterTriptych
+        ref={filterRef}
         sport={sport} distanceKm={distKm} skill={skill}
         onSportChange={setSport}
         onDistanceChange={setDistKm}
         onSkillChange={setSkill}
       />
 
-      <div ref={deckRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <SwipeDeck
-          players={displayPlayers}
-          onSwipeRight={handleSwipeRight}
-          onSwipeLeft={handleSwipeLeft}
-          undoId={undoId}
-          triggerSwipe={triggerSwipe}
-          onReset={isGuest ? resetTutorial : undefined}
-        />
+      {isDesktop ? (
+        /* ── Desktop: two-panel (full width) ── */
+        <div style={{
+          flex: 1,
+          display: 'grid',
+          gridTemplateColumns: '400px 1fr',
+          minHeight: 0,
+          width: '100%',
+        }}>
+          {/* Left: swipe deck + interaction bar */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            borderRight: '1px solid var(--color-bdr)',
+            padding: '16px 20px',
+            overflow: 'hidden',
+          }}>
+            <div ref={deckRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <SwipeDeck
+                players={displayPlayers}
+                onSwipeRight={handleSwipeRight}
+                onSwipeLeft={handleSwipeLeft}
+                undoId={undoId}
+                triggerSwipe={triggerSwipe}
+                onReset={isGuest ? resetTutorial : undefined}
+              />
+            </div>
+            <InteractionBar
+              inline
+              onPass={() => topPlayer && handleSwipeLeft(topPlayer.id)}
+              onConnect={() => topPlayer && handleSwipeRight(topPlayer.id)}
+              onShuffle={handleShuffle}
+              onFavorite={handleFavorite}
+              isFavorited={!!topPlayer && favoriteIds.has(topPlayer.id)}
+              disabled={!topPlayer}
+            />
+          </div>
+
+          {/* Right: player details */}
+          <div style={{ overflowY: 'auto', padding: '24px 28px' }}>
+            {topPlayer ? (
+              <DesktopPlayerPanel player={topPlayer} />
+            ) : (
+              <div style={{
+                height: '100%', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 12,
+                color: 'var(--color-t3)',
+              }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500 }}>No more players nearby</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t3)' }}>Adjust your filters to see more</div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ── Mobile: original layout ── */
+        <>
+          <div ref={deckRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, alignItems: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 480, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <SwipeDeck
+                players={displayPlayers}
+                onSwipeRight={handleSwipeRight}
+                onSwipeLeft={handleSwipeLeft}
+                undoId={undoId}
+                triggerSwipe={triggerSwipe}
+                onReset={isGuest ? resetTutorial : undefined}
+              />
+            </div>
+          </div>
+          <InteractionBar
+            onPass={() => topPlayer && handleSwipeLeft(topPlayer.id)}
+            onConnect={() => topPlayer && handleSwipeRight(topPlayer.id)}
+            onShuffle={handleShuffle}
+            onFavorite={handleFavorite}
+            isFavorited={!!topPlayer && favoriteIds.has(topPlayer.id)}
+            disabled={!topPlayer}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+function DesktopPlayerPanel({ player }: { player: DiscoverPlayer }) {
+  const LEVEL_LABELS: Record<string, string> = {
+    beginner: 'Beginner', intermediate: 'Intermediate',
+    advanced: 'Advanced', expert: 'Expert', professional: 'Professional',
+  };
+
+  const initials = player.fullName
+    ? player.fullName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── Header: avatar + name + score ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Avatar */}
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%', flexShrink: 0,
+          background: player.avatarUrl ? 'transparent' : 'var(--color-acc-bg)',
+          border: '2px solid var(--color-bdr)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
+        }}>
+          {player.avatarUrl ? (
+            <img src={player.avatarUrl} alt={player.fullName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700,
+              color: 'var(--color-acc)',
+            }}>{initials}</span>
+          )}
+        </div>
+
+        {/* Name + sport pill */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display)', fontSize: 22,
+            fontWeight: 800, color: 'var(--color-t1)', margin: 0, lineHeight: 1.2,
+          }}>
+            {player.fullName}
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <span style={{
+              display: 'inline-block', padding: '3px 10px', borderRadius: 999,
+              background: 'var(--color-acc-bg)', color: 'var(--color-acc)',
+              fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 11,
+              textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+            }}>
+              {player.sportName}
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)',
+            }}>
+              {LEVEL_LABELS[player.level] ?? player.level}
+            </span>
+            {player.isActiveRecently && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-acc)', display: 'inline-block' }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-acc)' }}>Active now</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Compatibility badge */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          background: 'var(--color-acc-bg)', borderRadius: 14,
+          padding: '10px 16px', flexShrink: 0,
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontSize: 24,
+            fontWeight: 800, color: 'var(--color-acc)', lineHeight: 1,
+          }}>
+            {player.compatibilityScore}%
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--color-acc)',
+            fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+            marginTop: 3, opacity: 0.8,
+          }}>
+            Match
+          </span>
+        </div>
       </div>
 
-      <InteractionBar
-        onPass={() => topPlayer && handleSwipeLeft(topPlayer.id)}
-        onConnect={() => topPlayer && handleSwipeRight(topPlayer.id)}
-        onUndo={handleUndo}
-        onFavorite={handleFavorite}
-        canUndo={!!lastSwipe}
-        isFavorited={!!topPlayer && favoriteIds.has(topPlayer.id)}
-        disabled={!topPlayer}
-      />
-    </>
+      {/* ── Compatibility bar ── */}
+      <div>
+        <div style={{ height: 4, borderRadius: 999, background: 'var(--color-surf-2)', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: 999,
+            width: `${player.compatibilityScore}%`,
+            background: `linear-gradient(90deg, var(--color-acc) 0%, var(--color-acc-dk) 100%)`,
+            transition: 'width 0.6s ease',
+          }} />
+        </div>
+      </div>
+
+      {/* ── Play style tags ── */}
+      {player.playStyle && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+          {player.playStyle.split(',').map((s: string) => (
+            <span key={s} style={{
+              padding: '4px 12px', borderRadius: 999,
+              background: 'var(--color-surf)', border: '1px solid var(--color-bdr)',
+              fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t2)',
+            }}>
+              {s.trim()}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* ── Stats grid ── */}
+      <div style={{
+        background: 'var(--color-surf)',
+        borderRadius: 14, padding: '16px 20px',
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px',
+      }}>
+        {([
+          ['Availability', player.availability],
+          ['Preferred time', player.preferredTime],
+          ['Home club', player.homeClub],
+          ['Schedule overlap', player.scheduleOverlapLabel],
+        ] as const).map(([label, value]) => (
+          <div key={label}>
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
+              textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'var(--color-t3)',
+              marginBottom: 3,
+            }}>
+              {label}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--color-t1)' }}>
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Match history ── */}
+      <div>
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
+          textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'var(--color-t3)',
+          marginBottom: 10,
+        }}>
+          Last 5 Matches
+        </div>
+        {player.recentMatches && player.recentMatches.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {player.recentMatches.map(m => (
+              <div key={m.id} style={{
+                display: 'flex', alignItems: 'center',
+                padding: '8px 12px', borderRadius: 10,
+                background: 'var(--color-surf)',
+                border: '1px solid var(--color-bdr)',
+              }}>
+                <span style={{
+                  width: 22, height: 22, borderRadius: '50%',
+                  background: m.result === 'W' ? 'rgba(22,212,106,0.12)' : 'rgba(239,68,68,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-body)', fontWeight: 800, fontSize: 11,
+                  color: m.result === 'W' ? 'var(--color-acc)' : 'var(--color-red)',
+                  flexShrink: 0,
+                }}>{m.result}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t1)', flex: 1, marginLeft: 10 }}>
+                  vs {m.opponentName}
+                </span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)', fontVariantNumeric: 'tabular-nums' }}>
+                  {m.score}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{
+            padding: '14px 16px', borderRadius: 10,
+            background: 'var(--color-surf)', border: '1px solid var(--color-bdr)',
+          }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t3)', margin: 0 }}>
+              Recently joined — no match history yet
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

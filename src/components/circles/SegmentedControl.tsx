@@ -27,9 +27,10 @@ export function SegmentedControl({ activeSegment, onSegmentChange }: SegmentedCo
         zIndex: 10,
         background: 'var(--color-bg)',
         borderBottom: '1px solid var(--color-bdr)',
-        padding: '8px 16px',
+        padding: '0 16px',
         display: 'flex',
-        gap: 8,
+        justifyContent: 'center',
+        gap: 0,
       }}
     >
       <button
@@ -40,38 +41,25 @@ export function SegmentedControl({ activeSegment, onSegmentChange }: SegmentedCo
         role="tab"
         tabIndex={0}
         style={{
-          flex: 1,
-          minHeight: 44,
-          padding: '8px 16px',
-          borderRadius: 'var(--radius-full)',
+          padding: '12px 20px',
           border: 'none',
-          background: activeSegment === 'MATCHES' ? 'var(--color-tab-on)' : 'var(--color-surf)',
-          color: activeSegment === 'MATCHES' ? 'var(--color-surf)' : 'var(--color-tab-off)',
+          borderBottom: activeSegment === 'MATCHES'
+            ? '2px solid var(--color-acc)'
+            : '2px solid transparent',
+          background: 'transparent',
+          color: activeSegment === 'MATCHES' ? 'var(--color-tab-on)' : 'var(--color-tab-off)',
           fontFamily: 'var(--font-body)',
           fontSize: 14,
-          fontWeight: 700,
+          fontWeight: 600,
+          letterSpacing: '0.01em',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'color 0.2s ease, border-color 0.2s ease',
           touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent',
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = 'scale(0.98)';
-        }}
-        onMouseUp={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        onTouchStart={(e) => {
-          e.currentTarget.style.transform = 'scale(0.98)';
-        }}
-        onTouchEnd={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
+          marginBottom: -1,
         }}
       >
-        MATCHES
+        Matches
       </button>
 
       <button
@@ -82,38 +70,25 @@ export function SegmentedControl({ activeSegment, onSegmentChange }: SegmentedCo
         role="tab"
         tabIndex={0}
         style={{
-          flex: 1,
-          minHeight: 44,
-          padding: '8px 16px',
-          borderRadius: 'var(--radius-full)',
+          padding: '12px 20px',
           border: 'none',
-          background: activeSegment === 'CIRCLES' ? 'var(--color-tab-on)' : 'var(--color-surf)',
-          color: activeSegment === 'CIRCLES' ? 'var(--color-surf)' : 'var(--color-tab-off)',
+          borderBottom: activeSegment === 'CIRCLES'
+            ? '2px solid var(--color-acc)'
+            : '2px solid transparent',
+          background: 'transparent',
+          color: activeSegment === 'CIRCLES' ? 'var(--color-tab-on)' : 'var(--color-tab-off)',
           fontFamily: 'var(--font-body)',
           fontSize: 14,
-          fontWeight: 700,
+          fontWeight: 600,
+          letterSpacing: '0.01em',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'color 0.2s ease, border-color 0.2s ease',
           touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent',
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = 'scale(0.98)';
-        }}
-        onMouseUp={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        onTouchStart={(e) => {
-          e.currentTarget.style.transform = 'scale(0.98)';
-        }}
-        onTouchEnd={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
+          marginBottom: -1,
         }}
       >
-        CIRCLES
+        Circles
       </button>
     </div>
   );

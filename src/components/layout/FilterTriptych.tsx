@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useImperativeHandle, forwardRef, useRef } from 'react';
 import { IconChevronDown } from '../../design-system';
 import type { FilterSport, FilterSkill } from '../../types/discover';
 import { FilterModal } from './FilterModal';
@@ -12,6 +12,10 @@ interface FilterTriptychProps {
   onSkillChange: (v: FilterSkill) => void;
 }
 
+export interface FilterTriptychHandle {
+  openFilter: (filter: 'sport' | 'distance' | 'skill') => void;
+}
+
 const SPORT_LABEL: Record<string, string> = {
   all: 'All sports', tennis: 'Tennis', padel: 'Padel',
   squash: 'Squash', platform_tennis: 'Platform Tennis',
@@ -21,9 +25,15 @@ const SKILL_LABEL: Record<string, string> = {
   advanced: 'Advanced', expert: 'Expert', professional: 'Professional',
 };
 
-function Col({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
+function Col({ label, value, onClick, btnRef }: {
+  label: string;
+  value: string;
+  onClick: () => void;
+  btnRef?: React.RefObject<HTMLButtonElement>;
+}) {
   return (
     <button
+      ref={btnRef}
       onClick={onClick}
       style={{
         flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -52,12 +62,17 @@ function Col({ label, value, onClick }: { label: string; value: string; onClick:
   );
 }
 
-export function FilterTriptych({
+export const FilterTriptych = forwardRef<FilterTriptychHandle, FilterTriptychProps>(function FilterTriptych({
   sport, distanceKm, skill,
   onSportChange, onDistanceChange, onSkillChange,
-}: FilterTriptychProps) {
+}, ref) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'sport' | 'distance' | 'skill' | null>(null);
+
+  const sportBtnRef = useRef<HTMLButtonElement>(null);
+  const distBtnRef  = useRef<HTMLButtonElement>(null);
+  const skillBtnRef = useRef<HTMLButtonElement>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const SPORTS: FilterSport[] = ['all', 'tennis', 'padel', 'squash'];
   const DISTANCES = [10, 25, 40, 80];
@@ -66,11 +81,17 @@ export function FilterTriptych({
   const openFilter = (filter: 'sport' | 'distance' | 'skill') => {
     setActiveFilter(filter);
     setIsModalOpen(true);
+    if (filter === 'sport')    setAnchorEl(sportBtnRef.current);
+    if (filter === 'distance') setAnchorEl(distBtnRef.current);
+    if (filter === 'skill')    setAnchorEl(skillBtnRef.current);
   };
+
+  useImperativeHandle(ref, () => ({ openFilter }));
 
   const closeModal = () => {
     setIsModalOpen(false);
     setActiveFilter(null);
+    setAnchorEl(null);
   };
 
   const distLabel = `${Math.round(distanceKm * 0.621)} miles`;
@@ -85,11 +106,11 @@ export function FilterTriptych({
         background: 'var(--color-bg)',
         position: 'relative', zIndex: 10,
       }}>
-        <Col label="FINDING" value={SPORT_LABEL[sport] ?? sport} onClick={() => openFilter('sport')} />
+        <Col label="FINDING" value={SPORT_LABEL[sport] ?? sport} onClick={() => openFilter('sport')} btnRef={sportBtnRef} />
         <div style={{ width: 1, background: 'var(--color-bdr)', margin: '14px 0' }} />
-        <Col label="WITHIN"  value={distLabel} onClick={() => openFilter('distance')} />
+        <Col label="WITHIN"  value={distLabel} onClick={() => openFilter('distance')} btnRef={distBtnRef} />
         <div style={{ width: 1, background: 'var(--color-bdr)', margin: '14px 0' }} />
-        <Col label="SKILL"   value={SKILL_LABEL[skill] ?? skill} onClick={() => openFilter('skill')} />
+        <Col label="SKILL"   value={SKILL_LABEL[skill] ?? skill} onClick={() => openFilter('skill')} btnRef={skillBtnRef} />
       </div>
 
       <FilterModal
@@ -105,7 +126,8 @@ export function FilterTriptych({
         sports={SPORTS}
         distances={DISTANCES}
         skills={SKILLS}
+        anchorEl={anchorEl}
       />
     </>
   );
-}
+});

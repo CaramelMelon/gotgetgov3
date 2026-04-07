@@ -8,106 +8,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
 import { type ClubRole } from '@/types/database';
+import {
+  type Step,
+  buildSteps,
+  toggleRole,
+  STEP_TITLES,
+  STEP_DESCRIPTIONS,
+  STEP_LABELS,
+  getSportsStepTitle,
+  getSportsStepDesc,
+} from './onboardingUtils';
+import { useClubSearch, type SelectedClub } from '@/hooks/useClubSearch';
 
-type Step =
-  | 'roles'
-  | 'profile'
-  | 'location_club'
-  | 'coach_sports'
-  | 'coach_lessons'
-  | 'sports'
-  | 'skill'
-  | 'availability'
-  | 'bio';
-
-export function buildSteps(roles: ClubRole[]): Step[] {
-  const steps: Step[] = ['roles', 'profile', 'location_club'];
-  if (roles.includes('coach')) {
-    steps.push('coach_sports', 'coach_lessons');
-  }
-  if (roles.includes('player')) {
-    steps.push('sports');
-  }
-  if (roles.includes('player')) {
-    steps.push('skill');
-  }
-  steps.push('availability', 'bio');
-  return steps;
-}
-
-const STEP_TITLES: Record<Step, string> = {
-  roles: 'How will you use the app?',
-  profile: 'Set up your profile',
-  location_club: 'Find your club',
-  coach_sports: 'What sports do you coach?',
-  coach_lessons: 'Your lesson packages',
-  sports: 'What sports do you play?',
-  skill: "What's your skill level?",
-  availability: 'When can you play?',
-  bio: 'Tell us about yourself',
-};
-
-const STEP_DESCRIPTIONS: Record<Step, string> = {
-  roles: 'Select all the roles that apply to you.',
-  profile: 'This is how other players will see you.',
-  location_club: 'Find and join your home club.',
-  coach_sports: 'Select the sports you coach or teach.',
-  coach_lessons: 'Set up your lesson packages and pricing.',
-  sports: "Select all the sports you're interested in.",
-  skill: 'This helps us match you with similar players.',
-  availability: "Tap days you're typically available.",
-  bio: 'A brief bio helps other players get to know you.',
-};
-
-const STEP_LABELS: Record<Step, string> = {
-  roles:             'ROLE SELECTION',
-  profile:           'YOUR PROFILE',
-  location_club:     'YOUR CLUB',
-  sports:            'SPORTS',
-  skill:             'SKILL LEVEL',
-  availability:      'AVAILABILITY',
-  bio:               'ABOUT YOU',
-  coach_sports:      'COACHING',
-  coach_lessons:     'LESSON PACKAGES',
-};
-
-function getSportsStepTitle(roles: ClubRole[]): string {
-  const isPlayer = roles.includes('player');
-  const isCoach = roles.includes('coach');
-  if (isPlayer && isCoach) return 'What sports do you play or coach?';
-  if (isCoach) return 'What sports do you coach?';
-  return 'What sports do you play?';
-}
-
-function getSportsStepDesc(roles: ClubRole[]): string {
-  const isPlayer = roles.includes('player');
-  const isCoach = roles.includes('coach');
-  if (isPlayer && isCoach) return "Select all the sports you're interested in playing or coaching.";
-  if (isCoach) return "Select all the sports you coach or teach.";
-  return "Select all the sports you're interested in.";
-}
-
-export function toggleRole(roles: ClubRole[], role: ClubRole): ClubRole[] {
-  const has = roles.includes(role);
-  if (has && roles.length === 1) return roles; // block removing last role
-  return has
-    ? roles.filter(r => r !== role)
-    : [...roles, role];
-}
-
-interface SelectedClub {
-  id: string;
-  name: string;
-  city: string | null;
-  state: string | null;
-  logo_url: string | null;
-  cover_image_url: string | null;
-  location_lat: number | null;
-  location_lng: number | null;
-  membershipRole?: ClubRole;
-}
-
-const CLUB_SEARCH_RADIUS_M = 25000;
+type SelectedClubWithRole = SelectedClub & { membershipRole?: ClubRole };
 
 const SPORT_IMAGES: Record<string, string> = {
   platform_tennis: 'https://images.pexels.com/photos/5067821/pexels-photo-5067821.jpeg?auto=compress&cs=tinysrgb&w=400',
@@ -150,14 +63,14 @@ interface OnboardingData {
   fullName: string;
   avatarUrl: string;
   avatarFile?: File;
-  selectedClubs: SelectedClub[];
+  selectedClubs: SelectedClubWithRole[];
   availability: AvailabilityEntry[];
   bio: string;
 
   // --- new fields ---
   selectedRoles: ClubRole[];
   coachSports: SportType[];
-  coachClubs: SelectedClub[];
+  coachClubs: SelectedClubWithRole[];
   coachSpecialties: Record<SportType, string[]>;
   coachLessons: LessonPackage[];
   coachProfileId: string | null;
@@ -172,38 +85,39 @@ const S = `
   :root{--text-muted:var(--color-t2);--text-dim:var(--color-t3)}
   .ob-root{background:var(--color-bg);font-family:var(--font-body);min-height:100vh;min-height:100dvh;position:relative;overflow:hidden}
   .ob-court-bg{position:fixed;inset:0;background:var(--color-bg);z-index:0}
-  .ob-hero-gradient{position:fixed;inset:0;z-index:1;background:radial-gradient(ellipse 70% 38% at 50% 0%,rgba(22,212,106,0.08) 0%,transparent 60%)}
-  .ob-grain{position:fixed;inset:0;pointer-events:none;z-index:2;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E")}
+  .ob-hero-gradient{position:fixed;inset:0;z-index:1;background:radial-gradient(ellipse 55% 22% at 50% 0%,rgba(22,212,106,0.07) 0%,transparent 100%)}
+  .ob-grain{position:fixed;inset:0;pointer-events:none;z-index:2;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E")}
   .ob-court-lines{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:52%;z-index:1;pointer-events:none}
-  .ob-orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,rgba(22,212,106,0.10) 0%,transparent 70%);filter:blur(48px)}
+  .ob-orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,rgba(22,212,106,0.06) 0%,transparent 70%);filter:blur(56px)}
   .ob-content{position:relative;z-index:10;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;padding:0 20px}
-  .ob-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 10px;gap:12px}
+  .ob-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 0;gap:12px}
   .ob-back-btn{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--color-surf);border:1px solid var(--color-bdr);color:var(--color-t1);cursor:pointer;transition:background 0.2s,transform 0.15s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
   .ob-back-btn:hover{background:var(--color-surf-2)}.ob-back-btn:active{transform:scale(0.94)}.ob-back-btn:disabled{opacity:0.25;cursor:not-allowed}
   .ob-skip-btn{font-family:var(--font-body);font-weight:500;font-size:0.9rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-t2);background:none;border:none;cursor:pointer;padding:8px 4px;transition:color 0.2s}
   .ob-skip-btn:hover{color:var(--color-t1)}
   /* ── Progress — Kinetic bar style ── */
   .ob-progress-wrap{flex:1;display:flex;align-items:center;justify-content:center}
-  .ob-app-name{font-family:var(--font-display);font-weight:900;font-size:1.1rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--color-t1);line-height:1}
+  .ob-app-name{font-family:'Georgia','Times New Roman',serif;font-weight:400;font-size:1.25rem;letter-spacing:0.01em;color:var(--color-t1);line-height:1;text-transform:none}
+  .ob-app-name em{font-style:italic;color:var(--color-acc)}
   .ob-dots{display:none}
   .ob-dot{display:none}
-  .ob-progress-band{display:flex;flex-direction:column;gap:6px;padding:8px 0 12px}
+  .ob-progress-band{display:flex;flex-direction:column;gap:6px;padding:20px 0 0}
   .ob-progress-meta{display:flex;align-items:center;justify-content:space-between}
   .ob-step-counter{font-family:var(--font-body);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;color:var(--color-t3);text-transform:uppercase}
   .ob-step-label{font-family:var(--font-body);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;color:var(--color-acc);text-transform:uppercase}
-  .ob-progress-bar-track{width:100%;height:3px;border-radius:var(--radius-full);background:var(--color-bdr);overflow:hidden}
-  .ob-progress-bar-fill{height:100%;border-radius:var(--radius-full);background:var(--color-acc);box-shadow:0 0 8px rgba(22,212,106,0.5);transition:width 0.45s cubic-bezier(0.22,1,0.36,1)}
-  .ob-divider{height:1px;background:linear-gradient(90deg,transparent,var(--color-acc),transparent);opacity:0.35;margin:4px 0 20px}
-  .ob-step-title{font-family:var(--font-display);font-weight:700;text-transform:uppercase;font-size:clamp(2rem,9vw,2.8rem);color:var(--color-t1);line-height:1.1;letter-spacing:-0.5px;margin-bottom:8px}
-  .ob-step-title span{color:var(--color-acc)}
-  .ob-step-desc{font-family:var(--font-body);font-weight:500;font-size:0.95rem;color:var(--color-t2);margin-bottom:24px}
+  .ob-progress-bar-track{width:100%;height:2px;border-radius:var(--radius-full);background:var(--color-bdr);overflow:hidden}
+  .ob-progress-bar-fill{height:100%;border-radius:var(--radius-full);background:var(--color-acc);box-shadow:0 0 6px rgba(22,212,106,0.4);transition:width 0.45s cubic-bezier(0.22,1,0.36,1)}
+  .ob-divider{display:none}
+  .ob-step-title{font-family:'Georgia','Times New Roman',serif;font-weight:400;font-size:clamp(1.75rem,8vw,2.4rem);color:var(--color-t1);line-height:1.15;letter-spacing:-0.3px;margin:24px 0 12px;text-transform:none}
+  .ob-step-title span{color:var(--color-acc);font-style:italic}
+  .ob-step-desc{font-family:var(--font-body);font-weight:400;font-size:0.875rem;color:var(--color-t3);margin-bottom:20px;letter-spacing:0.01em}
   .ob-card{background:transparent;border:none;border-radius:0;padding:0}
   .ob-input{width:100%;padding:14px 16px;background:var(--color-surf);border:1px solid var(--color-bdr);border-radius:12px;color:var(--color-t1);font-family:var(--font-body);font-size:0.95rem;font-weight:500;outline:none;transition:border-color 0.2s,background 0.2s;box-sizing:border-box;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .ob-input::placeholder{color:var(--color-t3)}.ob-input:focus{border-color:var(--color-acc);background:var(--color-acc-bg)}
   .ob-textarea{width:100%;padding:14px 16px;background:var(--color-surf);border:1px solid var(--color-bdr);border-radius:12px;color:var(--color-t1);font-family:var(--font-body);font-size:0.95rem;font-weight:500;outline:none;resize:none;transition:border-color 0.2s,background 0.2s;box-sizing:border-box;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .ob-textarea::placeholder{color:var(--color-t3)}.ob-textarea:focus{border-color:var(--color-acc);background:var(--color-acc-bg)}
   .ob-label{font-family:var(--font-body);font-size:0.7rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--color-t3);margin-bottom:8px;display:block}
-  .ob-sport-card{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;border:2px solid rgba(255,255,255,0.08);transition:border-color 0.2s,transform 0.15s}
+  .ob-sport-card{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;border:2px solid var(--color-bdr-s);transition:border-color 0.2s,transform 0.15s}
   .ob-sport-card.selected{border-color:var(--color-acc)}.ob-sport-card:hover{transform:scale(1.02)}.ob-sport-card:active{transform:scale(0.97)}
   .ob-skill-btn{padding:10px 8px;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.04em;border:1px solid var(--color-bdr);background:var(--color-surf);color:var(--color-t2);cursor:pointer;transition:all 0.15s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .ob-skill-btn.active{background:var(--color-acc);border-color:var(--color-acc);color:var(--color-bg);box-shadow:0 2px 12px rgba(22,212,106,0.4)}
@@ -215,128 +129,101 @@ const S = `
   .ob-skill-level-name{display:none}
   .ob-skill-level-desc{display:none}
 
-  /* sport section card */
+  /* ── Jersey Card ── */
   .ob-sport-section{
-    margin-bottom:20px;
+    margin-bottom:16px;
     position:relative;
-    background:var(--color-surf);
-    border:1px solid var(--color-bdr);
-    border-radius:16px;
-    padding:18px 18px 20px;
+    background:#08111e;
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:22px;
+    padding:18px 18px 16px;
     overflow:hidden;
-    backdrop-filter:blur(16px);
-    -webkit-backdrop-filter:blur(16px);
-    box-shadow:0 4px 24px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.06);
+    box-shadow:0 8px 36px rgba(0,0,0,0.35),0 1px 0 rgba(255,255,255,0.05) inset;
+    transition:transform 0.2s,box-shadow 0.2s;
+    min-height:168px;
   }
+  .ob-sport-section:active{transform:scale(0.995)}
   .ob-sport-section-bg{
-    display:none;
+    position:absolute;inset:0;
+    background-size:cover;background-position:center;
+    transform:scale(1.06);
+    z-index:0;
   }
-  .ob-sport-section-content{position:relative;z-index:1}
+  .ob-sport-section-overlay{
+    position:absolute;inset:0;z-index:1;
+    background:linear-gradient(150deg,rgba(4,10,22,0.87) 0%,rgba(4,10,22,0.6) 55%,rgba(4,10,22,0.82) 100%);
+  }
+  .ob-sport-section-content{position:relative;z-index:2}
+
+  /* sport header row */
   .ob-sport-section-name{
-    font-family:var(--font-body);font-weight:600;
-    font-size:1.15rem;text-transform:uppercase;letter-spacing:0.12em;
-    color:var(--color-t1);margin-bottom:12px;
+    font-family:var(--font-body);font-weight:700;
+    font-size:0.6rem;text-transform:uppercase;letter-spacing:0.2em;
+    color:rgba(255,255,255,0.45);margin-bottom:10px;
     display:flex;align-items:center;justify-content:space-between;
   }
 
-  /* inline level + desc row */
+  /* level display — refined, minimal */
   .ob-skill-inline{
-    display:flex;flex-direction:column;gap:3px;
-    margin-bottom:20px;
+    display:flex;flex-direction:column;gap:4px;
+    margin-bottom:14px;
   }
   .ob-skill-inline-name{
-    font-family:var(--font-body);font-weight:700;
-    font-size:0.95rem;text-transform:uppercase;letter-spacing:0.12em;
-    color:var(--color-t1);
-    transition:font-weight 0.2s,color 0.2s;
+    font-family:var(--font-body);font-weight:600;
+    font-size:1.35rem;letter-spacing:0.01em;text-transform:none;
+    color:#fff;line-height:1.2;
+    transition:color 0.15s;
   }
   .ob-skill-inline-desc{
-    font-family:var(--font-body);font-size:0.78rem;font-weight:400;
-    color:var(--color-t2);
-    transition:color 0.2s;
+    font-family:var(--font-body);font-size:0.75rem;font-weight:400;
+    color:rgba(255,255,255,0.45);line-height:1.4;font-style:normal;
+    transition:color 0.15s;
   }
 
-  /* track */
-  .ob-slider-track-wrap{position:relative;padding:0 2px}
-  .ob-slider-track{
-    position:relative;height:4px;border-radius:4px;
-    background:rgba(255,255,255,0.15);
+  /* ── Level chips — 44px touch targets ── */
+  .ob-level-chips{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:6px;
   }
-  .ob-slider-fill{
-    position:absolute;left:0;top:0;height:100%;border-radius:4px;
-    background:linear-gradient(90deg,var(--color-acc),var(--color-acc));
-    transition:width 0.28s cubic-bezier(0.22,1,0.36,1);
-    box-shadow:0 0 8px rgba(22,212,106,0.5);
+  .ob-level-chip{
+    height:40px;border-radius:10px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.05);
+    font-family:var(--font-body);font-weight:500;
+    font-size:0.7rem;text-transform:none;letter-spacing:0.01em;
+    color:rgba(255,255,255,0.4);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:all 0.18s cubic-bezier(0.22,1,0.36,1);
+    user-select:none;
   }
-
-  /* ticks */
-  .ob-slider-ticks{
-    position:absolute;top:50%;transform:translateY(-50%);
-    left:0;right:0;display:flex;justify-content:space-between;
-    pointer-events:none;
+  .ob-level-chip:hover:not(.active){
+    background:rgba(255,255,255,0.1);
+    color:rgba(255,255,255,0.75);
+    border-color:rgba(255,255,255,0.22);
   }
-  .ob-slider-tick{
-    width:4px;height:4px;border-radius:50%;
-    background:rgba(255,255,255,0.2);
-    transition:background 0.25s,transform 0.25s;
-  }
-  .ob-slider-tick.passed{background:var(--color-acc-bg)}
-  .ob-slider-tick.current{background:#fff;transform:scale(1.6);box-shadow:0 0 6px rgba(255,255,255,0.5)}
-
-  /* thumb */
-  .ob-slider-thumb{
-    position:absolute;top:50%;
-    width:20px;height:20px;border-radius:50%;
-    background:#fff;
-    border:2.5px solid var(--color-acc);
-    box-shadow:0 0 0 4px rgba(22,212,106,0.18),0 2px 10px rgba(0,0,0,0.4);
-    transform:translate(-50%,-50%);
-    transition:left 0.28s cubic-bezier(0.22,1,0.36,1),box-shadow 0.2s;
-    pointer-events:none;z-index:2;
+  .ob-level-chip:active{transform:scale(0.95)}
+  .ob-level-chip.active{
+    background:rgba(22,212,106,0.12);
+    border-color:rgba(22,212,106,0.6);
+    color:var(--color-acc);font-weight:600;
   }
 
-  /* native range overlay */
-  .ob-slider-input{
-    position:absolute;inset:-14px 0;width:100%;height:calc(100% + 28px);
-    opacity:0;cursor:pointer;z-index:3;margin:0;-webkit-appearance:none;
-  }
-  .ob-slider-input:active ~ .ob-slider-thumb{
-    box-shadow:0 0 0 8px rgba(22,212,106,0.2),0 2px 10px rgba(0,0,0,0.4);
-  }
-
-  /* labels — equal grid so ticks align perfectly */
-  .ob-slider-labels{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    margin-top:10px;
-  }
-  .ob-slider-label{
-    font-family:var(--font-body);font-weight:400;
-    font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;
-    color:var(--color-t3);
-    transition:color 0.2s,font-weight 0.2s;cursor:pointer;
-    padding:4px 0;user-select:none;
-    text-align:center;
-  }
-  .ob-slider-label:first-child{text-align:left}
-  .ob-slider-label:last-child{text-align:right}
-  .ob-slider-label.active{color:var(--color-t1);font-weight:700}
-
-  /* PTI rating toggle — secondary button style */
+  /* PTI rating toggle — compact inline link style */
   .ob-rating-toggle{
-    display:inline-flex;align-items:center;gap:6px;
-    margin-top:16px;padding:9px 16px;
-    background:var(--color-acc-bg);
-    border:1px solid var(--color-bdr);
+    display:inline-flex;align-items:center;gap:5px;
+    margin-top:10px;
+    padding:7px 12px 7px 10px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
     border-radius:10px;
-    font-family:var(--font-body);font-size:0.78rem;font-weight:600;
-    letter-spacing:0.06em;text-transform:uppercase;
-    color:var(--color-acc);
-    cursor:pointer;transition:background 0.2s,border-color 0.2s;
-    width:100%;justify-content:center;
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    font-family:var(--font-body);font-size:0.68rem;font-weight:600;
+    letter-spacing:0.05em;text-transform:uppercase;
+    color:rgba(255,255,255,0.4);
+    cursor:pointer;transition:color 0.2s,background 0.2s,border-color 0.2s;
+    min-height:36px;
   }
-  .ob-rating-toggle:hover{background:var(--color-surf-2);border-color:var(--color-acc)}
+  .ob-rating-toggle:hover{color:var(--color-acc);background:rgba(22,212,106,0.1);border-color:rgba(22,212,106,0.3)}
 
   /* legacy hidden */
   .ob-skill-card,.ob-skill-card-num,.ob-skill-card-check,
@@ -344,18 +231,18 @@ const S = `
   .ob-skill-card-rank{display:none}
   .ob-day-btn{aspect-ratio:1/1;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;border:1px solid var(--color-bdr);background:var(--color-surf);color:var(--color-t2);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .ob-day-btn.active{background:var(--color-acc);border-color:var(--color-acc);color:var(--color-bg);box-shadow:0 2px 10px rgba(22,212,106,0.35);backdrop-filter:none}
-  .ob-cta{width:100%;height:60px;border-radius:16px;cursor:pointer;background:var(--color-acc);color:var(--color-bg);font-family:var(--font-display);font-weight:800;font-size:1.15rem;letter-spacing:0.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;border:none;transition:box-shadow 0.3s,transform 0.15s;box-shadow:0 4px 28px rgba(22,212,106,0.45),0 1px 0 rgba(255,255,255,0.1) inset;position:relative;overflow:hidden}
-  .ob-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.14) 0%,transparent 50%);pointer-events:none}
-  .ob-cta:hover{box-shadow:0 8px 36px rgba(22,212,106,0.6),0 1px 0 rgba(255,255,255,0.1) inset;transform:translateY(-1px)}
-  .ob-cta:active{transform:scale(0.98)}
-  .ob-cta.pressed{background:transparent;border:2px solid var(--color-acc);color:var(--color-acc);box-shadow:none;animation:ob-pulse 0.5s ease forwards}
-  .ob-cta:disabled{opacity:0.5;cursor:not-allowed;transform:none}
-  @keyframes ob-pulse{0%{box-shadow:0 0 0 0 rgba(22,212,106,0.6)}60%{box-shadow:0 0 0 10px rgba(22,212,106,0)}100%{box-shadow:0 0 0 0 rgba(22,212,106,0)}}
-  .ob-cta-sticky{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;z-index:20;pointer-events:none;padding:40px 20px 48px;background:linear-gradient(0deg,var(--color-bg) 55%,rgba(6,12,26,0.85) 75%,transparent 100%)}
+  .ob-cta{width:100%;height:48px;border-radius:14px;cursor:pointer;background:var(--color-acc);color:var(--color-bg);font-family:var(--font-display);font-weight:800;font-size:1rem;letter-spacing:0.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;border:none;transition:box-shadow 0.25s,transform 0.15s,opacity 0.3s,filter 0.3s,background 0.2s;box-shadow:0 4px 20px rgba(22,212,106,0.4),0 1px 0 rgba(255,255,255,0.1) inset;position:relative;overflow:hidden}
+  .ob-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 50%);pointer-events:none}
+  .ob-cta:hover:not(:disabled){box-shadow:0 6px 28px rgba(22,212,106,0.55),0 1px 0 rgba(255,255,255,0.1) inset;transform:translateY(-1px)}
+  .ob-cta:active:not(:disabled){transform:scale(0.97);box-shadow:0 2px 10px rgba(22,212,106,0.3)}
+  .ob-cta.pressed{background:transparent;border:2px solid var(--color-acc);color:var(--color-acc);box-shadow:none;animation:ob-pulse 0.45s ease forwards}
+  .ob-cta:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;filter:saturate(0.4)}
+  @keyframes ob-pulse{0%{box-shadow:0 0 0 0 rgba(22,212,106,0.5)}60%{box-shadow:0 0 0 10px rgba(22,212,106,0)}100%{box-shadow:0 0 0 0 rgba(22,212,106,0)}}
+  .ob-cta-sticky{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;z-index:20;pointer-events:none;padding:32px 20px 36px;background:linear-gradient(0deg,var(--color-bg) 60%,transparent 100%)}
   .ob-cta-sticky .ob-cta{pointer-events:auto;width:100%;max-width:440px}
   .ob-sport-section{margin-bottom:28px}
   .ob-modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(4,10,28,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
-  .ob-modal{background:linear-gradient(160deg,rgba(8,18,48,0.88) 0%,rgba(5,12,35,0.92) 100%);border:1px solid var(--color-bdr);border-top:1px solid var(--color-acc);border-radius:20px;padding:28px 24px 24px;max-width:340px;width:100%;box-shadow:0 0 0 1px rgba(22,212,106,0.15),0 20px 60px rgba(0,30,20,0.5),0 0 80px rgba(22,212,106,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+  .ob-modal{background:var(--color-surf);border:1px solid var(--color-bdr);border-top:1px solid var(--color-acc);border-radius:20px;padding:28px 24px 24px;max-width:340px;width:100%;box-shadow:0 0 0 1px rgba(22,212,106,0.15),0 20px 60px rgba(0,0,0,0.15),0 0 80px rgba(22,212,106,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
   .ob-modal-icon-wrap{width:52px;height:52px;border-radius:14px;background:var(--color-acc-bg);border:1px solid var(--color-bdr);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 28px rgba(22,212,106,0.2),inset 0 1px 0 rgba(22,212,106,0.2)}
   .ob-modal-title{font-family:var(--font-display);font-weight:900;font-size:clamp(1.6rem,7vw,2rem);text-transform:uppercase;color:var(--color-t1);margin-bottom:8px;text-align:center;letter-spacing:-0.5px;line-height:1.1}
   .ob-modal-desc{font-family:var(--font-body);font-size:0.875rem;font-weight:400;color:var(--color-t2);margin-bottom:24px;line-height:1.6;text-align:center}
@@ -365,23 +252,25 @@ const S = `
   .ob-modal-btn-primary{flex:1;height:50px;border-radius:12px;background:var(--color-surf);border:1px solid var(--color-bdr);color:var(--color-t2);font-family:var(--font-display);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;transition:background 0.18s,color 0.18s}
   .ob-modal-btn-primary:hover{background:var(--color-surf-2);color:var(--color-t1)}
   .ob-success-check{width:72px;height:72px;border-radius:50%;background:var(--color-acc-bg);border:2px solid var(--color-acc);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 32px rgba(22,212,106,0.3)}
-  .ob-spinner{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:ob-spin 0.7s linear infinite}
+  .ob-spinner{width:20px;height:20px;border-radius:50%;border:2px solid var(--color-bdr);border-top-color:var(--color-t1);animation:ob-spin 0.7s linear infinite}
   @keyframes ob-spin{to{transform:rotate(360deg)}}
-  /* ── Role rows — vertical pill list ── */
-  .ob-role-row{display:flex;align-items:center;gap:14px;min-height:72px;padding:0 16px 0 12px;border-radius:var(--radius-full);border:1.5px solid var(--color-bdr);background:var(--color-surf);cursor:pointer;transition:border-color 0.2s,background 0.2s,transform 0.15s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:relative;user-select:none}
-  .ob-role-row.selected{border-color:var(--color-acc);background:var(--color-acc-bg)}
-  .ob-role-row.disabled{opacity:0.38;cursor:not-allowed;pointer-events:none}
-  .ob-role-row:active:not(.disabled){transform:scale(0.985)}
-  .ob-role-row-icon{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:var(--color-surf-2);border:1px solid var(--color-bdr);display:flex;align-items:center;justify-content:center;font-size:1.3rem;line-height:1;transition:background 0.2s,border-color 0.2s}
-  .ob-role-row.selected .ob-role-row-icon{background:var(--color-acc);border-color:var(--color-acc)}
+  /* ── Role rows ── */
+  .ob-role-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid var(--color-bdr);background:var(--color-surf);cursor:pointer;transition:border-color 0.15s,background 0.15s,box-shadow 0.15s;position:relative;user-select:none;box-sizing:border-box;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .ob-role-row:hover:not(.disabled){border-color:rgba(22,212,106,0.55);background:rgba(22,212,106,0.03);box-shadow:0 2px 8px rgba(22,212,106,0.08)}
+  .ob-role-row:active:not(.disabled){transform:scale(0.98)}
+  .ob-role-row.selected{border:1.5px solid rgba(22,212,106,0.85);background:rgba(22,212,106,0.05);box-shadow:0 2px 12px rgba(22,212,106,0.14),0 0 0 1px rgba(22,212,106,0.08)}
+  .ob-role-row.disabled{opacity:0.45;cursor:not-allowed;pointer-events:none}
+  .ob-role-row-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:rgba(0,0,0,0.04);border:1px solid var(--color-bdr);display:flex;align-items:center;justify-content:center;color:var(--color-t2);transition:background 0.15s,border-color 0.15s,color 0.15s}
+  .ob-role-row.selected .ob-role-row-icon{background:rgba(22,212,106,0.1);border-color:rgba(22,212,106,0.2);color:rgba(22,212,106,0.9)}
   .ob-role-row-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-  .ob-role-row-title{font-family:var(--font-body);font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--color-t1);line-height:1.2}
-  .ob-role-row-desc{font-family:var(--font-body);font-size:0.72rem;color:var(--color-t2);line-height:1.3}
-  .ob-role-row-check{width:22px;height:22px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--color-bdr);display:flex;align-items:center;justify-content:center;transition:background 0.2s,border-color 0.2s;background:transparent}
-  .ob-role-row.selected .ob-role-row-check{background:var(--color-acc);border-color:var(--color-acc)}
-  .ob-role-row-lock{width:22px;height:22px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--color-bdr);background:var(--color-surf-2);display:flex;align-items:center;justify-content:center;color:var(--color-t3)}
-  .ob-coming-soon-badge{position:absolute;top:-8px;right:16px;font-family:var(--font-body);font-size:0.58rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:var(--color-surf-2);border:1px solid var(--color-bdr);border-radius:var(--radius-full);padding:2px 8px;color:var(--color-t3)}
-  .ob-role-card,.ob-role-card-icon,.ob-role-card-title,.ob-role-card-desc,.ob-role-card-check{display:none}
+  .ob-role-row-title{font-family:'Georgia','Times New Roman',serif;font-weight:400;font-size:0.975rem;letter-spacing:0.01em;color:var(--color-t1);line-height:1.2}
+  .ob-role-row-desc{font-family:var(--font-body);font-size:0.72rem;font-weight:400;color:var(--color-t3);line-height:1.3}
+  .ob-role-row.selected .ob-role-row-desc{color:var(--color-t2)}
+  .ob-role-row-lock{flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--color-t3)}
+  .ob-coming-soon-badge{font-family:var(--font-body);font-size:0.58rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:var(--color-t3);border-radius:var(--radius-full);padding:3px 8px;color:var(--color-bg);white-space:nowrap;flex-shrink:0;opacity:0.7}
+  /* particle burst */
+  .ob-particle{position:absolute;border-radius:50%;pointer-events:none;animation:ob-particle-out 0.6s ease-out forwards}
+  @keyframes ob-particle-out{0%{transform:translate(-50%,-50%) scale(1);opacity:0.9}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0);opacity:0}}
   .ob-club-result{padding:12px 14px;border-radius:10px;font-family:var(--font-body);font-size:0.9rem;font-weight:500;color:var(--color-t1);background:var(--color-surf);border:1px solid var(--color-bdr);cursor:pointer;transition:background 0.15s;text-align:left;width:100%}
   .ob-club-result:hover{background:var(--color-surf-2)}
   .ob-club-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--color-acc-bg);border:1px solid var(--color-bdr);font-family:var(--font-body);font-size:0.82rem;font-weight:500;color:var(--color-t1)}
@@ -395,114 +284,6 @@ interface StepProps {
   setData: React.Dispatch<React.SetStateAction<OnboardingData>>;
 }
 
-function useGoogleMaps(): { ready: boolean } {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!key) return;
-
-    const src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
-
-    // Avoid appending if script already exists
-    if (!document.querySelector(`script[src="${src}"]`)) {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    // Poll until window.google?.maps is available
-    const interval = setInterval(() => {
-      if ((window as Window & typeof globalThis & { google?: { maps?: unknown } }).google?.maps) {
-        setReady(true);
-        clearInterval(interval);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return { ready };
-}
-
-function useClubSearch(
-  query: string,
-  lat: number | null,
-  lng: number | null,
-  sports: SportType[]
-): { results: SelectedClub[]; loading: boolean } {
-  const [results, setResults] = useState<SelectedClub[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-
-    // Early-exit conditions
-    if (!trimmed || lat === null || lng === null) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-
-    // Maps SDK not ready
-    const g = (window as Window & typeof globalThis & { google?: { maps?: { places?: unknown; LatLng?: unknown } } }).google;
-    if (!g?.maps) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    const timer = setTimeout(() => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapsApi = g.maps as any;
-        const service = new mapsApi.places.PlacesService(document.createElement('div'));
-        const keyword = sports.join(' ');
-
-        service.nearbySearch(
-          {
-            location: new mapsApi.LatLng(lat, lng),
-            radius: CLUB_SEARCH_RADIUS_M,
-            keyword,
-            type: 'establishment',
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (places: any[] | null, status: string) => {
-            if (status === mapsApi.places.PlacesServiceStatus.OK && places) {
-              setResults(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                places.map((place: any) => ({
-                  id: place.place_id ?? '',
-                  name: place.name ?? '',
-                  city: null,
-                  state: null,
-                  logo_url: null,
-                  cover_image_url: null,
-                  location_lat: place.geometry?.location?.lat() ?? null,
-                  location_lng: place.geometry?.location?.lng() ?? null,
-                }))
-              );
-            } else {
-              setResults([]);
-            }
-            setLoading(false);
-          }
-        );
-      } catch (err) {
-        console.error('Club search error:', err);
-        setResults([]);
-        setLoading(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [query, lat, lng, sports]);
-
-  return { results, loading };
-}
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -722,19 +503,11 @@ export function OnboardingPage() {
             <button className="ob-back-btn" onClick={handleBack} disabled={isFirstStep} aria-label="Back">
               <ArrowLeft size={18} />
             </button>
-            <div className="ob-progress-wrap">
-              <span className="ob-app-name">Got-Get-Go</span>
-            </div>
+            <div className="ob-progress-wrap" />
             <button className="ob-skip-btn" onClick={handleSkip}>Skip</button>
           </div>
 
           <div className="ob-progress-band">
-            <div className="ob-progress-meta">
-              <span className="ob-step-counter">
-                STEP {String(currentStep + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}
-              </span>
-              <span className="ob-step-label">{STEP_LABELS[step]}</span>
-            </div>
             <div className="ob-progress-bar-track">
               <div
                 className="ob-progress-bar-fill"
@@ -754,7 +527,6 @@ export function OnboardingPage() {
                 exit="exit"
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="ob-divider" style={{ marginTop: 8 }} />
                 <h1 className="ob-step-title">{titleMain} <span>{titleAccent}</span></h1>
                 <p className="ob-step-desc">{stepDesc}</p>
                 <div className="ob-card">
@@ -777,7 +549,7 @@ export function OnboardingPage() {
 
       {/* Sticky CTA — outside ob-content so fixed positioning works correctly */}
       <AnimatePresence>
-        {(step !== 'sports' || data.selectedSports.length > 0) && !imagePickerOpen && (
+        {(step !== 'sports' || data.selectedSports.length > 0) && (step !== 'location_club' || data.selectedClubs.length > 0) && !imagePickerOpen && (
           <motion.div
             key="cta"
             initial={{ opacity: 0, y: 40 }}
@@ -1071,9 +843,11 @@ const SportIcon = ({ sport, color }: { sport: string; color: string }) => {
 };
 
 
+const CHIP_LABELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+
 function SkillStep({ data, setData }: StepProps) {
   const SKILL_META = [
-    { label: 'Beginner',     desc: 'Just trying out, learning the basics' },
+    { label: 'Beginner',     desc: 'Just starting out, learning the basics' },
     { label: 'Intermediate', desc: 'Comfortable playing, improving consistency' },
     { label: 'Advanced',     desc: 'Competitive player, strong technique' },
     { label: 'Expert',       desc: 'Tournament-level, highly competitive' },
@@ -1091,88 +865,72 @@ function SkillStep({ data, setData }: StepProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {data.selectedSports.map((sport, i) => {
         const sportInfo = SPORTS[sport];
         const currentLevel = data.sportLevels[sport] ?? 1;
-        const fillPct = (currentLevel / (SKILL_META.length - 1)) * 100;
 
         return (
           <motion.div
             key={sport}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.08, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="ob-sport-section"
-            style={{
-              background: SPORT_ACCENT.bg,
-              borderColor: SPORT_ACCENT.border,
-            }}
           >
-            {/* Blurred sport photo background */}
+            {/* Full sport photo background */}
             {SPORT_IMAGES[sport] && (
               <div
                 className="ob-sport-section-bg"
                 style={{ backgroundImage: `url(${SPORT_IMAGES[sport]})` }}
               />
             )}
+            {/* Dark gradient overlay */}
+            <div className="ob-sport-section-overlay" />
 
             <div className="ob-sport-section-content">
-            {/* Sport name header */}
-            <p className="ob-sport-section-name">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  <SportIcon sport={sport} color={SPORT_ACCENT.icon} />
+              {/* Sport name header */}
+              <p className="ob-sport-section-name">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    <SportIcon sport={sport} color="rgba(255,255,255,0.6)" />
+                  </span>
+                  {sportInfo?.name || sport}
                 </span>
-                {sportInfo?.name || sport}
-              </span>
-            </p>
+              </p>
 
-            <div className="ob-skill-slider-wrap">
-              {/* Current level + description */}
-              <motion.div
-                key={currentLevel}
-                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="ob-skill-inline"
-              >
-                <span className="ob-skill-inline-name">{SKILL_META[currentLevel].label}</span>
-                <span className="ob-skill-inline-desc">{SKILL_META[currentLevel].desc}</span>
-              </motion.div>
+              {/* Level display — big scoreboard name */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentLevel}
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  className="ob-skill-inline"
+                >
+                  <span className="ob-skill-inline-name">{SKILL_META[currentLevel].label}</span>
+                  <span className="ob-skill-inline-desc">{SKILL_META[currentLevel].desc}</span>
+                </motion.div>
+              </AnimatePresence>
 
-              {/* Slider */}
-              <div className="ob-slider-track-wrap">
-                <div className="ob-slider-track">
-                  <div className="ob-slider-fill" style={{ width: `${fillPct}%` }} />
-                  <div className="ob-slider-ticks">
-                    {SKILL_META.map((_, idx) => (
-                      <div key={idx} className={`ob-slider-tick${idx < currentLevel ? ' passed' : idx === currentLevel ? ' current' : ''}`} />
-                    ))}
-                  </div>
-                  <div className="ob-slider-thumb" style={{ left: `${fillPct}%` }} />
-                  <input
-                    type="range" min={0} max={SKILL_META.length - 1} step={1}
-                    value={currentLevel}
-                    onChange={e => setData(prev => ({ ...prev, sportLevels: { ...prev.sportLevels, [sport]: Number(e.target.value) } }))}
-                    className="ob-slider-input"
-                    aria-label={`Skill level for ${sportInfo?.name || sport}`}
-                  />
-                </div>
-                <div className="ob-slider-labels">
-                  {SKILL_META.map((meta, idx) => (
-                    <span
-                      key={idx}
-                      className={`ob-slider-label${idx === currentLevel ? ' active' : ''}`}
-                      onClick={() => setData(prev => ({ ...prev, sportLevels: { ...prev.sportLevels, [sport]: idx } }))}
-                    >
-                      {meta.label}
-                    </span>
-                  ))}
-                </div>
+              {/* Level chips — tap to select, 44px touch targets */}
+              <div className="ob-level-chips" role="group" aria-label={`Skill level for ${sportInfo?.name || sport}`}>
+                {SKILL_META.map((meta, idx) => (
+                  <motion.button
+                    key={idx}
+                    className={`ob-level-chip${idx === currentLevel ? ' active' : ''}`}
+                    onClick={() => setData(prev => ({ ...prev, sportLevels: { ...prev.sportLevels, [sport]: idx } }))}
+                    whileTap={{ scale: 0.92 }}
+                    transition={{ duration: 0.12 }}
+                    aria-pressed={idx === currentLevel}
+                  >
+                    {CHIP_LABELS[idx]}
+                  </motion.button>
+                ))}
               </div>
 
-              {/* PTI rating — anchored under the slider */}
+              {/* PTI / official rating toggle */}
               {sportInfo?.officialRatingSystem && (
                 <div>
                   <button
@@ -1180,7 +938,7 @@ function SkillStep({ data, setData }: StepProps) {
                     onClick={() => setData(prev => ({ ...prev, showRatings: { ...prev.showRatings, [sport]: !prev.showRatings[sport] } }))}
                   >
                     <span>Have a {sportInfo?.officialRatingSystem} rating?</span>
-                    <ChevronDown size={12} style={{ transform: data.showRatings[sport] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                    <ChevronDown size={11} style={{ transform: data.showRatings[sport] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   </button>
                   <AnimatePresence>
                     {data.showRatings[sport] && (
@@ -1191,6 +949,7 @@ function SkillStep({ data, setData }: StepProps) {
                             placeholder={`Enter your ${sportInfo?.officialRatingSystem} rating`}
                             value={data.externalRatings[sport] || ''}
                             onChange={e => setData(prev => ({ ...prev, externalRatings: { ...prev.externalRatings, [sport]: e.target.value } }))}
+                            style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', color: '#fff' }}
                           />
                         </div>
                       </motion.div>
@@ -1198,7 +957,6 @@ function SkillStep({ data, setData }: StepProps) {
                   </AnimatePresence>
                 </div>
               )}
-            </div>
             </div>
           </motion.div>
         );
@@ -1265,72 +1023,106 @@ function AvailabilityStep({ data, setData }: StepProps) {
   );
 }
 
+function spawnParticles(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  const colors = ['rgba(22,212,106,0.9)', 'rgba(22,212,106,0.6)', 'rgba(255,255,255,0.7)', 'rgba(22,212,106,0.4)'];
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('span');
+    p.className = 'ob-particle';
+    const angle = (i / 10) * Math.PI * 2 + Math.random() * 0.4;
+    const dist = 28 + Math.random() * 32;
+    const size = 3 + Math.random() * 4;
+    p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${colors[i % colors.length]};--dx:${Math.cos(angle) * dist}px;--dy:${Math.sin(angle) * dist}px;animation-delay:${Math.random() * 60}ms`;
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
 function RolesStep({ data, setData }: StepProps) {
   const isPlayerSelected = data.selectedRoles.includes('player');
   const isCoachSelected = data.selectedRoles.includes('coach');
   const isClubAdminSelected = data.selectedRoles.includes('club_admin');
 
+  const toggle = (role: ClubRole, e: React.MouseEvent<HTMLDivElement>) => {
+    const wasSelected = data.selectedRoles.includes(role);
+    if (!wasSelected) spawnParticles(e.currentTarget);
+    setData(prev => ({ ...prev, selectedRoles: toggleRole(prev.selectedRoles, role) }));
+  };
+
+  const roles = [
+    {
+      key: 'player' as ClubRole,
+      selected: isPlayerSelected,
+      title: 'Player',
+      desc: 'Find matches & connect',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 2c1.507 0 2.92.39 4.147 1.073A14.3 14.3 0 0 1 12.8 9.4a14.3 14.3 0 0 1-5.04-1.145A7.96 7.96 0 0 1 12 4zm-6.93 4.516A16.3 16.3 0 0 0 10.8 9.93a16.3 16.3 0 0 0-.93 5.07H4.05A7.97 7.97 0 0 1 5.07 8.516zm0 6.968A7.97 7.97 0 0 1 4.05 11h5.82a16.3 16.3 0 0 0 .93 5.07 16.3 16.3 0 0 0-5.73 1.414zM12 20a7.96 7.96 0 0 1-4.147-1.073A14.3 14.3 0 0 1 11.2 14.6a14.3 14.3 0 0 1 5.04 1.145A7.96 7.96 0 0 1 12 20zm6.93-4.516A16.3 16.3 0 0 0 13.2 14.07a16.3 16.3 0 0 0 .93-5.07h5.82a7.97 7.97 0 0 1-1.02 6.484zm1.02-8.484H14.13a16.3 16.3 0 0 0-.93-5.07 16.3 16.3 0 0 0 5.73-1.414A7.97 7.97 0 0 1 19.95 7z"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'coach' as ClubRole,
+      selected: isCoachSelected,
+      title: 'Coach',
+      desc: 'Teach & build your roster',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'club_admin' as ClubRole,
+      selected: isClubAdminSelected,
+      title: 'Club Admin',
+      desc: 'Manage your club',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {/* Player */}
-      <div
-        className={`ob-role-row${isPlayerSelected ? ' selected' : ''}`}
-        onClick={() => setData(prev => ({ ...prev, selectedRoles: toggleRole(prev.selectedRoles, 'player') }))}
-      >
-        <div className="ob-role-row-icon">🎾</div>
-        <div className="ob-role-row-body">
-          <span className="ob-role-row-title">Player</span>
-          <span className="ob-role-row-desc">Find matches &amp; connect</span>
-        </div>
-        <div className="ob-role-row-check">
-          {isPlayerSelected && <Check size={12} color="var(--color-bg)" strokeWidth={3} />}
-        </div>
-      </div>
-
-      {/* Coach */}
-      <div
-        className={`ob-role-row${isCoachSelected ? ' selected' : ''}`}
-        onClick={() => setData(prev => ({ ...prev, selectedRoles: toggleRole(prev.selectedRoles, 'coach') }))}
-      >
-        <div className="ob-role-row-icon">🏆</div>
-        <div className="ob-role-row-body">
-          <span className="ob-role-row-title">Coach</span>
-          <span className="ob-role-row-desc">Teach &amp; build your roster</span>
-        </div>
-        <div className="ob-role-row-check">
-          {isCoachSelected && <Check size={12} color="var(--color-bg)" strokeWidth={3} />}
-        </div>
-      </div>
-
-      {/* Club Admin */}
-      <div
-        className={`ob-role-row${isClubAdminSelected ? ' selected' : ''}`}
-        onClick={() => setData(prev => ({ ...prev, selectedRoles: toggleRole(prev.selectedRoles, 'club_admin') }))}
-      >
-        <div className="ob-role-row-icon">🏟️</div>
-        <div className="ob-role-row-body">
-          <span className="ob-role-row-title">Club Admin</span>
-          <span className="ob-role-row-desc">Manage your club</span>
-        </div>
-        <div className="ob-role-row-check">
-          {isClubAdminSelected && <Check size={12} color="var(--color-bg)" strokeWidth={3} />}
-        </div>
-      </div>
+      {roles.map(({ key, selected, title, desc, icon }) => (
+        <motion.div
+          key={key}
+          className={`ob-role-row${selected ? ' selected' : ''}`}
+          onClick={e => toggle(key, e)}
+          animate={selected ? { scale: [1, 0.97, 1.01, 1] } : { scale: 1 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          <motion.div
+            className="ob-role-row-icon"
+            animate={selected ? { rotate: [0, -8, 6, 0] } : { rotate: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            {icon}
+          </motion.div>
+          <div className="ob-role-row-body">
+            <span className="ob-role-row-title">{title}</span>
+            <span className="ob-role-row-desc">{desc}</span>
+          </div>
+        </motion.div>
+      ))}
 
       {/* Organizer — disabled */}
       <div className="ob-role-row disabled">
-        <span className="ob-coming-soon-badge">Coming Soon</span>
-        <div className="ob-role-row-icon">🗓️</div>
+        <div className="ob-role-row-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/>
+          </svg>
+        </div>
         <div className="ob-role-row-body">
           <span className="ob-role-row-title">Organizer</span>
           <span className="ob-role-row-desc">Run tournaments</span>
         </div>
-        <div className="ob-role-row-lock">
-          <svg width="11" height="13" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="1" y="5.5" width="9" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
-            <path d="M3.5 5.5V3.5a2 2 0 0 1 4 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-          </svg>
-        </div>
+        <span className="ob-coming-soon-badge">Coming Soon</span>
       </div>
     </div>
   );
@@ -1517,12 +1309,12 @@ function CoachLessonsStep({ data, setData }: StepProps) {
 }
 
 function LocationClubStep({ data, setData, user }: CoachStepProps) {
-  const { ready } = useGoogleMaps();
   const [query, setQuery] = useState('');
-  const [selectedClub, setSelectedClub] = useState<SelectedClub | null>(null);
-  const [membershipRole, setMembershipRole] = useState<ClubRole>('player');
   const [createError, setCreateError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const defaultRole: ClubRole = data.selectedRoles.includes('coach') ? 'coach'
+    : data.selectedRoles.includes('club_admin') ? 'club_admin'
+    : 'player';
   const { results, loading } = useClubSearch(
     query,
     data.locationLat,
@@ -1544,28 +1336,15 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
     );
   }, []);
 
-  const confirmClub = () => {
-    if (!selectedClub) return;
-    if (!data.selectedClubs.some(c => c.id === selectedClub.id)) {
-      setData(prev => ({
-        ...prev,
-        selectedClubs: [...prev.selectedClubs, { ...selectedClub, membershipRole }],
-      }));
-    }
-    setSelectedClub(null);
-    setQuery('');
-    setMembershipRole('player');
+  const toggleClub = (club: SelectedClub) => {
+    const already = data.selectedClubs.some(c => c.id === club.id);
+    setData(prev => ({
+      ...prev,
+      selectedClubs: already
+        ? prev.selectedClubs.filter(c => c.id !== club.id)
+        : [...prev.selectedClubs, { ...club, membershipRole: defaultRole }],
+    }));
   };
-
-  const removeClub = (clubId: string) => {
-    setData(prev => ({ ...prev, selectedClubs: prev.selectedClubs.filter(c => c.id !== clubId) }));
-  };
-
-  // Membership role options = intersection of {player, coach, club_admin} with selectedRoles,
-  // always including 'player'
-  const membershipOptions: ClubRole[] = ['player'];
-  if (data.selectedRoles.includes('coach')) membershipOptions.push('coach');
-  if (data.selectedRoles.includes('club_admin')) membershipOptions.push('club_admin');
 
   const createClub = async () => {
     const name = query.trim();
@@ -1581,7 +1360,7 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
       return;
     }
     if (newClub) {
-      setSelectedClub(newClub as SelectedClub);
+      toggleClub(newClub as SelectedClub);
       setQuery('');
     }
   };
@@ -1642,12 +1421,6 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
         </p>
       )}
 
-      {!ready && (
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-t2)', margin: 0 }}>
-          Search unavailable
-        </p>
-      )}
-
       {loading && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
           <div className="ob-spinner" />
@@ -1656,15 +1429,49 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
 
       {!loading && results.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {results.map(club => (
-            <button
-              key={club.id}
-              className="ob-club-result"
-              onClick={() => setSelectedClub(club)}
-            >
-              {club.name}
-            </button>
-          ))}
+          {results.map(club => {
+            const isSelected = data.selectedClubs.some(c => c.id === club.id);
+            return (
+              <motion.button
+                key={club.id}
+                className="ob-role-row"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: isSelected ? 'var(--color-acc-bg)' : 'var(--color-surf)',
+                  border: `1px solid ${isSelected ? 'var(--color-acc)' : 'var(--color-bdr)'}`,
+                  borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
+                  width: '100%', textAlign: 'left',
+                }}
+                onClick={() => toggleClub(club)}
+                animate={isSelected ? { scale: [1, 0.97, 1.01, 1] } : { scale: 1 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                <div>
+                  <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.92rem', color: 'var(--color-t1)' }}>
+                    {club.name}
+                  </span>
+                  {(club.city || club.state) && (
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: 'var(--color-t3)', display: 'block', marginTop: 2 }}>
+                      {[club.city, club.state].filter(Boolean).join(', ')}
+                    </span>
+                  )}
+                </div>
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
+                      style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-acc)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    >
+                      <Check size={13} color="var(--color-bg)" strokeWidth={3} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            );
+          })}
         </div>
       )}
 
@@ -1675,53 +1482,6 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
         >
           + Create "{query.trim()}"
         </button>
-      )}
-
-      {selectedClub && (
-        <div style={{ background: 'var(--color-acc-bg)', border: '1px solid var(--color-bdr)', borderRadius: 12, padding: '14px 14px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-t2)', margin: 0 }}>
-            {selectedClub.name} — Join as
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {membershipOptions.map(role => (
-              <button
-                key={role}
-                className={`ob-skill-btn${membershipRole === role ? ' active' : ''}`}
-                onClick={() => setMembershipRole(role)}
-              >
-                {role === 'club_admin' ? 'Admin' : role.charAt(0).toUpperCase() + role.slice(1)}
-              </button>
-            ))}
-          </div>
-          <button
-            className="ob-skill-btn active"
-            style={{ alignSelf: 'flex-start', padding: '10px 20px' }}
-            onClick={confirmClub}
-          >
-            Confirm
-          </button>
-        </div>
-      )}
-
-      {data.selectedClubs.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-          {data.selectedClubs.map(club => (
-            <div
-              key={club.id}
-              className="ob-club-chip"
-              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <span>{club.name}</span>
-              <button
-                onClick={() => removeClub(club.id)}
-                style={{ background: 'none', border: 'none', color: 'var(--color-t1)', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: '1rem' }}
-                aria-label={`Remove ${club.name}`}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );

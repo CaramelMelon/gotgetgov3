@@ -18,7 +18,7 @@ export function SectionHeader({ label, linkText, onLinkClick }: SectionHeaderPro
       <span
         style={{
           fontFamily: 'var(--font-body)',
-          fontSize: 9,
+          fontSize: 12,
           fontWeight: 700,
           color: 'var(--color-t2)',
           textTransform: 'uppercase',

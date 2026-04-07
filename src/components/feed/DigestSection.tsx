@@ -16,7 +16,7 @@ export function DigestSection({ matches, onSeeAllClick }: DigestSectionProps) {
   return (
     <section style={{ marginBottom: 24 }}>
       <SectionHeader
-        label="This Week"
+        label="Recent Matches"
         linkText={onSeeAllClick ? "See All" : undefined}
         onLinkClick={onSeeAllClick}
       />

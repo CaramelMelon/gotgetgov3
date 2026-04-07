@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Trophy, ChevronRight, LogOut, ClipboardList, Copy, Check } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import { MapPin, Trophy, ChevronRight, ClipboardList, Copy, Check, Heart } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { AvailabilityModal } from '@/components/availability';
 import { SportRow } from '@/components/me/SportRow';
 import { SettingsRow } from '@/components/me/SettingsRow';
+import { LikedPlayersSection } from '@/components/me/LikedPlayersSection';
 import { SectionTitle } from '@/design-system';
 import {
   IconCalendar,
@@ -17,9 +19,10 @@ import {
 } from '@/design-system/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import type { SportType } from '@/types/database';
+import type { SportType, LikedPlayer } from '@/types/database';
 import { fetchPendingScoreMatches } from '@/lib/scoring';
-import { useTheme } from '@/hooks/useTheme';
+import { useThemeContext } from '@/contexts/ThemeContext';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 // ── Local helpers ──────────────────────────────────────────────────────────────
 
@@ -84,13 +87,17 @@ function MiniStatCard({
 export function ProfilePage() {
   const navigate = useNavigate();
   const { profile, user, signOut, updateProfile } = useAuth();
-  const { theme, toggle } = useTheme();
+  const { theme, toggle } = useThemeContext();
   const isDark = theme === 'dark';
+  const isDesktop = useIsDesktop();
 
   const [uploading, setUploading] = useState(false);
   const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
+  const [likedModalOpen, setLikedModalOpen] = useState(false);
   const [pendingScoreCount, setPendingScoreCount] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [likedPlayers, setLikedPlayers] = useState<LikedPlayer[]>([]);
+  const [likedLoading, setLikedLoading] = useState<boolean>(true);
 
   const shortId = user?.id ? `#${user.id.split('-')[0].toUpperCase()}` : '#--------';
 
@@ -114,6 +121,28 @@ export function ProfilePage() {
     fetchPendingScoreMatches(user.id).then(({ data }) => {
       setPendingScoreCount(data?.length ?? 0);
     });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('liked_players')
+      .select('liked_user_id, sport, profiles!liked_user_id(full_name, avatar_url)')
+      .eq('liker_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setLikedPlayers(
+          (data ?? [])
+            .filter((r: any) => r.profiles != null)
+            .map((r: any) => ({
+              id: r.liked_user_id,
+              fullName: r.profiles?.full_name ?? 'Unknown',
+              avatarUrl: r.profiles?.avatar_url ?? null,
+              sport: r.sport,
+            }))
+        );
+        setLikedLoading(false);
+      });
   }, [user?.id]);
 
   const handleSignOut = async () => {
@@ -175,27 +204,26 @@ export function ProfilePage() {
         WebkitOverflowScrolling: 'touch',
       }}
     >
+      <PageContainer style={{ display: 'flex', flexDirection: 'column' }}>
+
       {/* ── A. Profile Hero ─────────────────────────────────────────────────── */}
-      <div
-        style={{
-          padding: 'var(--space-5)',
-          paddingTop: 'var(--space-6)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 'var(--space-3)',
-          textAlign: 'center',
-        }}
-      >
+      <div style={{
+        display: 'flex',
+        flexDirection: isDesktop ? 'row' : 'column',
+        alignItems: 'center',
+        textAlign: isDesktop ? 'left' : 'center',
+        padding: '24px 20px 16px',
+        gap: isDesktop ? 24 : 12,
+      }}>
         {/* Avatar with green ring */}
-        <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
           <ImageUpload
             value={profile?.avatar_url}
             name={profile?.full_name || 'User'}
             onChange={handleAvatarChange}
             size="xl"
           />
-          {/* Decorative ring — sits outside the avatar, doesn't affect camera btn */}
+          {/* Decorative ring */}
           <div
             style={{
               position: 'absolute',
@@ -205,7 +233,6 @@ export function ProfilePage() {
               pointerEvents: 'none',
             }}
           />
-          {/* Upload spinner */}
           {uploading && (
             <div
               style={{
@@ -233,88 +260,89 @@ export function ProfilePage() {
           )}
         </div>
 
-        {/* Name */}
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'var(--text-3xl)',
-            fontWeight: 'var(--weight-bold)',
-            letterSpacing: 'var(--tracking-tight)',
-            color: 'var(--color-t1)',
-            lineHeight: 'var(--leading-tight)',
-          }}
-        >
-          {profile?.full_name || 'Your Name'}
-        </div>
-
-        {/* Unique ID pill */}
-        <button
-          onClick={handleCopyId}
-          title="Copy your unique ID"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '4px 12px',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-surf)',
-            border: '1px solid var(--color-bdr)',
-            cursor: 'pointer',
-            color: copied ? 'var(--color-acc)' : 'var(--color-t3)',
-            fontFamily: 'var(--font-body)', fontWeight: 700,
-            fontSize: 12, letterSpacing: '0.06em',
-            transition: 'color 0.2s',
-            marginTop: 4,
-          }}
-        >
-          {copied
-            ? <Check size={12} strokeWidth={3} />
-            : <Copy size={12} />
-          }
-          {copied ? 'Copied!' : shortId}
-        </button>
-
-        {/* Location */}
-        {location && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isDesktop ? 'flex-start' : 'center', gap: 6 }}>
+          {/* Name */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-1)',
-              color: 'var(--color-t2)',
+              fontFamily: 'var(--font-display)',
+              fontSize: isDesktop ? 28 : 'var(--text-3xl)',
+              fontWeight: 'var(--weight-bold)',
+              letterSpacing: 'var(--tracking-tight)',
+              color: 'var(--color-t1)',
+              lineHeight: 'var(--leading-tight)',
             }}
           >
-            <MapPin size={13} style={{ flexShrink: 0 }} />
-            <span
+            {profile?.full_name || 'Your Name'}
+          </div>
+
+          {/* Unique ID pill */}
+          <button
+            onClick={handleCopyId}
+            title="Copy your unique ID"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-surf)',
+              border: '1px solid var(--color-bdr)',
+              cursor: 'pointer',
+              color: copied ? 'var(--color-acc)' : 'var(--color-t3)',
+              fontFamily: 'var(--font-body)', fontWeight: 700,
+              fontSize: 12, letterSpacing: '0.06em',
+              transition: 'color 0.2s',
+            }}
+          >
+            {copied
+              ? <Check size={12} strokeWidth={3} />
+              : <Copy size={12} />
+            }
+            {copied ? 'Copied!' : shortId}
+          </button>
+
+          {/* Location */}
+          {location && (
+            <div
               style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 'var(--weight-medium)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-1)',
+                color: 'var(--color-t2)',
               }}
             >
-              {location}
-            </span>
-          </div>
-        )}
+              <MapPin size={13} style={{ flexShrink: 0 }} />
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 'var(--weight-medium)',
+                }}
+              >
+                {location}
+              </span>
+            </div>
+          )}
 
-        {/* Edit Profile pill */}
-        <button
-          onClick={() => navigate('/settings')}
-          style={{
-            marginTop: 'var(--space-1)',
-            padding: 'var(--space-2) var(--space-6)',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-t1)',
-            color: 'var(--color-bg)',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 'var(--weight-semibold)',
-            letterSpacing: 'var(--tracking-wide)',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          Edit Profile
-        </button>
+          {/* Edit Profile pill */}
+          <button
+            onClick={() => navigate('/settings')}
+            style={{
+              marginTop: 'var(--space-1)',
+              padding: 'var(--space-2) var(--space-6)',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-t1)',
+              color: 'var(--color-bg)',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--weight-semibold)',
+              letterSpacing: 'var(--tracking-wide)',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Edit Profile
+          </button>
+        </div>
       </div>
 
       {/* ── B. Performance Sync ──────────────────────────────────────────────── */}
@@ -511,7 +539,39 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ── E. Activity Feed ─────────────────────────────────────────────────── */}
+      {/* ── E. Liked Players (button → opens modal) ──────────────────────── */}
+      <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
+        <div style={{ background: 'var(--color-surf)', borderRadius: 'var(--radius-2xl)', overflow: 'hidden' }}>
+          <button
+            onClick={() => setLikedModalOpen(true)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              padding: 'var(--space-4) var(--space-5)',
+              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 'var(--radius-md)',
+              background: 'rgba(220,38,38,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Heart size={18} color="#ef4444" fill="#ef4444" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-t1)' }}>
+                Liked Players
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-xs)', color: 'var(--color-t3)', marginTop: 2 }}>
+                {likedLoading ? 'Loading…' : likedPlayers.length === 0 ? 'No liked players yet' : `${likedPlayers.length} player${likedPlayers.length !== 1 ? 's' : ''}`}
+              </div>
+            </div>
+            <ChevronRight size={14} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── F. Activity Feed ─────────────────────────────────────────────────── */}
       <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
         <div style={{ marginBottom: 'var(--space-3)' }}>
           <SectionTitle>Activity Feed</SectionTitle>
@@ -590,7 +650,7 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ── F. My Clubs ──────────────────────────────────────────────────────── */}
+      {/* ── G. My Clubs ──────────────────────────────────────────────────────── */}
       <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
         <div style={{ marginBottom: 'var(--space-3)' }}>
           <SectionTitle>My Clubs</SectionTitle>
@@ -670,7 +730,7 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ── G. Settings rows ─────────────────────────────────────────────────── */}
+      {/* ── H. Settings rows ─────────────────────────────────────────────────── */}
       <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
         <div
           style={{
@@ -720,7 +780,7 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ── H. Sign Out ──────────────────────────────────────────────────────── */}
+      {/* ── I. Sign Out ──────────────────────────────────────────────────────── */}
       <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
         <button
           onClick={handleSignOut}
@@ -750,6 +810,14 @@ export function ProfilePage() {
         isOpen={availabilityModalOpen}
         onClose={() => setAvailabilityModalOpen(false)}
       />
+
+      <LikedPlayersSection
+        likedPlayers={likedPlayers}
+        loading={likedLoading}
+        open={likedModalOpen}
+        onClose={() => setLikedModalOpen(false)}
+      />
+      </PageContainer>
     </div>
   );
 }

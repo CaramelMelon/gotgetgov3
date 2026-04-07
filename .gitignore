@@ -38,6 +38,10 @@ build
 .claude
 .kiro
 .kiro/specs
+screenshots
+screenshots-mobile
+docs
+
 # OS files
 Thumbs.db
 
