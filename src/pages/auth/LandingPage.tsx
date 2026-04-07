@@ -4,6 +4,7 @@ import { Users, Trophy, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuestTutorial } from '@/contexts/GuestTutorialContext';
+import { useThemeContext } from '@/contexts/ThemeContext';
 import { AuthBottomSheet } from './AuthBottomSheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -43,6 +44,8 @@ export function LandingPage() {
   const navigate = useNavigate();
   const { enterGuestMode } = useAuth();
   const { startTutorial } = useGuestTutorial();
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
@@ -115,7 +118,7 @@ export function LandingPage() {
                     filter: 'blur(20px)', borderRadius: '50%',
                   }} />
                   <img
-                    src="/logo.png"
+                    src={logoSrc}
                     alt="GotGetGo"
                     className="relative object-contain"
                     style={{ width: 80, height: 80, filter: 'drop-shadow(0 0 12px rgba(22,212,106,0.5))' }}
@@ -211,7 +214,7 @@ export function LandingPage() {
                     filter: 'blur(20px)', borderRadius: '50%',
                   }} />
                   <img
-                    src="/logo.png"
+                    src={logoSrc}
                     alt="GotGetGo"
                     className="relative object-contain"
                     style={{ width: 80, height: 80, filter: 'drop-shadow(0 0 12px rgba(22,212,106,0.5))' }}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeContext } from '../../contexts/ThemeContext';
 import { IconArrowLeft } from '../../design-system/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -391,6 +392,8 @@ function WelcomeScreen({ onNavigate, onContinueAsGuest }: {
   onNavigate: (s: AuthScreen) => void;
   onContinueAsGuest: () => void;
 }) {
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   return (
     <div style={{
       position: 'absolute',
@@ -403,7 +406,7 @@ function WelcomeScreen({ onNavigate, onContinueAsGuest }: {
     }}>
       {/* Hero */}
       <div style={{ textAlign: 'center' }}>
-        <img src="/logo.png" alt="GotGetGo" style={{ height: 60, width: 'auto', marginBottom: 28 }} />
+        <img src={logoSrc} alt="GotGetGo" style={{ height: 60, width: 'auto', marginBottom: 28 }} />
         <h1 style={{
           fontFamily: 'var(--font-display)',
           fontSize: 'var(--text-3xl)',
@@ -695,6 +698,8 @@ function SignUpScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
 
 export function AuthFlow() {
   const { enterGuestMode: continueAsGuest } = useAuth();
+  const { theme } = useThemeContext();
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
   const [screen, setScreen] = useState<AuthScreen>('welcome');
   const isCard = screen === 'signin' || screen === 'signup';
 
