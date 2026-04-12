@@ -97,33 +97,33 @@ export function ScheduleOverlapBar({ myUserId, otherUserId, otherName }: Props) 
       <button
         onClick={() => setExpanded((e) => !e)}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
+          width: '100%', display: 'flex', alignItems: 'center', gap: 7,
+          padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer',
         }}
       >
-        <Clock size={13} style={{ color: 'var(--color-acc)', flexShrink: 0 }} />
+        <Clock size={11} style={{ color: 'var(--color-acc)', flexShrink: 0 }} />
         <span style={{
-          fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700,
-          letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-t2)',
+          fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
+          letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--color-t3)',
           flex: 1, textAlign: 'left',
         }}>
           Schedule Overlap
         </span>
         {expanded
-          ? <ChevronUp size={14} style={{ color: 'var(--color-t3)' }} />
-          : <ChevronDown size={14} style={{ color: 'var(--color-t3)' }} />}
+          ? <ChevronUp size={12} style={{ color: 'var(--color-t3)' }} />
+          : <ChevronDown size={12} style={{ color: 'var(--color-t3)' }} />}
       </button>
 
       {expanded && (
-        <div style={{ padding: '0 14px 12px' }}>
+        <div style={{ padding: '0 14px 10px' }}>
           {loading ? (
-            <div style={{ height: 24, display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 14, height: 14, border: '2px solid var(--color-acc)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ height: 20, display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: 12, height: 12, border: '1.5px solid var(--color-acc)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : (
             <>
               {/* Pill rows */}
-              <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
                 {visibleSlots.map((slot) => {
                   const mine = slotActive(myAvail, slot);
                   const theirs = slotActive(theirAvail, slot);
@@ -131,16 +131,16 @@ export function ScheduleOverlapBar({ myUserId, otherUserId, otherName }: Props) 
 
                   let bg: string, border: string, color: string;
                   if (both) {
-                    bg = 'color-mix(in srgb, var(--color-acc) 18%, transparent)';
-                    border = 'var(--color-acc)';
+                    bg = 'color-mix(in srgb, var(--color-acc) 14%, transparent)';
+                    border = 'color-mix(in srgb, var(--color-acc) 50%, transparent)';
                     color = 'var(--color-acc)';
                   } else if (mine) {
-                    bg = 'rgba(100,149,237,0.12)';
-                    border = 'rgba(100,149,237,0.5)';
+                    bg = 'rgba(100,149,237,0.09)';
+                    border = 'rgba(100,149,237,0.35)';
                     color = 'rgb(100,149,237)';
                   } else {
-                    bg = 'rgba(200,150,80,0.10)';
-                    border = 'rgba(200,150,80,0.4)';
+                    bg = 'rgba(200,150,80,0.08)';
+                    border = 'rgba(200,150,80,0.3)';
                     color = 'rgb(200,150,80)';
                   }
 
@@ -148,23 +148,23 @@ export function ScheduleOverlapBar({ myUserId, otherUserId, otherName }: Props) 
                     <span
                       key={slot.label}
                       style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        padding: '4px 10px', borderRadius: 999,
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        padding: '3px 8px', borderRadius: 6,
                         border: `1px solid ${border}`,
                         background: bg, color,
-                        fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-                        whiteSpace: 'nowrap',
+                        fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600,
+                        whiteSpace: 'nowrap', letterSpacing: '-0.01em',
                       }}
                     >
                       {slot.label}
-                      {both && <span style={{ fontSize: 11 }}>✓</span>}
+                      {both && <span style={{ fontSize: 10, opacity: 0.8 }}>✓</span>}
                     </span>
                   );
                 })}
               </div>
 
               {/* Legend */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Legend dot="var(--color-acc)" label="Both free" />
                 <Legend dot="rgb(100,149,237)" label="You" />
                 <Legend dot="rgb(200,150,80)" label={otherName.split(' ')[0]} />

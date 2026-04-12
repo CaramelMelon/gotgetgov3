@@ -383,7 +383,8 @@ export function MessageComposer({ onSend, sending, sendError, onSuggestTime }: M
 
       {/* ── Composer bar ───────────────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--color-bg)',
+        background: 'var(--color-surf)',
+        borderTop: '1px solid var(--color-bdr)',
         paddingTop: 8,
         paddingBottom: `calc(8px + env(safe-area-inset-bottom, 0px))`,
         paddingLeft: 12,
@@ -425,8 +426,9 @@ export function MessageComposer({ onSend, sending, sendError, onSuggestTime }: M
           {/* Text input */}
           <div style={{
             flex: 1, background: 'var(--color-surf-2)',
-            borderRadius: 'var(--radius-full)', padding: '9px 14px',
-            display: 'flex', alignItems: 'center', minHeight: 40,
+            borderRadius: 20, padding: '9px 14px',
+            display: 'flex', alignItems: 'center', minHeight: 38,
+            border: '1px solid var(--color-bdr)',
           }}>
             <textarea
               ref={inputRef}
@@ -439,7 +441,7 @@ export function MessageComposer({ onSend, sending, sendError, onSuggestTime }: M
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
                 resize: 'none', fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)', color: 'var(--color-t1)',
+                fontSize: 13, color: 'var(--color-t1)',
                 lineHeight: 1.4, maxHeight: 100, overflowY: 'auto',
                 padding: 0, scrollbarWidth: 'none',
               } as React.CSSProperties}

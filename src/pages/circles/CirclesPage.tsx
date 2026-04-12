@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Users } from 'lucide-react';
 import { CirclesListView } from './CirclesListView';
 import { ChatDetailView } from './ChatDetailView';
 import { MatchesView } from './MatchesView';
@@ -9,6 +10,7 @@ import { useConversations } from '../../hooks/useConversations';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { useNavVisibility } from '../../contexts/NavVisibilityContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { getOrCreateDirectConversation } from '../../lib/messaging';
 import { EMMA_CONVERSATION_ITEM } from '../../data/emmaDemoProfile';
 import { SegmentedControl } from '../../components/circles';
@@ -134,17 +136,37 @@ const viewTransitionConfig = {
  */
 export function CirclesPage() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const targetConversationId = (location.state as { openConversationId?: string } | null)?.openConversationId;
-  
+
+  // Desktop nav passes ?view=circles or ?view=matches to force initial segment.
+  // targetConversationId always wins (deep link to a conversation).
+  const viewParam = searchParams.get('view');
+  const initialSegment: CirclesSegment = targetConversationId
+    ? 'CIRCLES'
+    : viewParam === 'circles'
+    ? 'CIRCLES'
+    : viewParam === 'matches'
+    ? 'MATCHES'
+    : 'MATCHES';
+
   const [screen, setScreen] = useState<CirclesScreen>({ view: 'list' });
   const { conversations, loading, error, markAsRead, refetch, hasMore, loadMore, loadingMore } = useConversations();
   const { user, isGuest } = useAuth();
   const { tutorialStep, advanceTutorial } = useGuestTutorial();
   const { setHideNav } = useNavVisibility();
+  const { isDesktop } = useResponsive();
 
   // New state for segmented control and feed data
   // If we have a target conversation, start on CIRCLES segment to avoid showing MATCHES first
-  const [activeSegment, setActiveSegment] = useState<CirclesSegment>(targetConversationId ? 'CIRCLES' : 'MATCHES');
+  const [activeSegment, setActiveSegment] = useState<CirclesSegment>(initialSegment);
+
+  // Sync segment when desktop nav tab changes (?view= param updates without unmounting)
+  useEffect(() => {
+    if (targetConversationId) return; // deep link takes priority
+    if (viewParam === 'circles') setActiveSegment('CIRCLES');
+    else if (viewParam === 'matches') setActiveSegment('MATCHES');
+  }, [viewParam, targetConversationId]);
   const [feedData, setFeedData] = useState<FeedData>({
     heroMatch: null,
     challenges: [],
@@ -172,13 +194,13 @@ export function CirclesPage() {
 
   const openChat = useCallback((item: ConversationItem) => {
     setScreen({ view: 'chat', item });
-    setHideNav(true);
-  }, [setHideNav]);
+    if (!isDesktop) setHideNav(true);
+  }, [setHideNav, isDesktop]);
 
   const goBack = useCallback(() => {
     setScreen({ view: 'list' });
-    setHideNav(false);
-  }, [setHideNav]);
+    if (!isDesktop) setHideNav(false);
+  }, [setHideNav, isDesktop]);
 
   const handleSegmentChange = useCallback((segment: CirclesSegment) => {
     // Save current scroll position before switching
@@ -532,6 +554,97 @@ export function CirclesPage() {
     });
   }, [activeSegment, scrollPositions]);
 
+  // ── Desktop: WhatsApp-like two-panel layout for CIRCLES segment ──────────────
+  if (isDesktop && activeSegment === 'CIRCLES') {
+    const selectedId = screen.view === 'chat' ? screen.item.conversation.id : undefined;
+    return (
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0, background: 'var(--color-bg)' }}>
+        {/* Left panel — conversation list */}
+        <div
+          style={{
+            width: 320,
+            flexShrink: 0,
+            borderRight: '1px solid var(--color-bdr)',
+            display: 'flex',
+            flexDirection: 'column',
+            background: 'var(--color-bg)',
+          }}
+        >
+          <CirclesView
+            conversations={conversations}
+            loading={loading}
+            error={error}
+            onOpenChat={openChat}
+            onNewChat={handleNewChat}
+            scrollContainerRef={circlesScrollRef}
+            selectedConversationId={selectedId}
+            hasMore={hasMore}
+            loadMore={loadMore}
+            loadingMore={loadingMore}
+          />
+        </div>
+
+        {/* Right panel — active chat thread or empty state */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {screen.view === 'chat' ? (
+            <ChatDetailView
+              conversationItem={screen.item}
+              onBack={goBack}
+              markAsRead={markAsRead}
+              hideBackButton
+            />
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                background: 'var(--color-bg)',
+              }}
+            >
+              <div style={{
+                width: 52,
+                height: 52,
+                borderRadius: 14,
+                background: 'var(--color-surf)',
+                border: '1px solid var(--color-bdr)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Users size={22} strokeWidth={1.5} style={{ color: 'var(--color-t3)' }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--color-t2)',
+                  margin: '0 0 4px',
+                  letterSpacing: '-0.01em',
+                }}>
+                  No conversation selected
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 11,
+                  color: 'var(--color-t3)',
+                  margin: 0,
+                }}>
+                  Choose from your circles on the left
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mobile / Matches: existing full-screen animated behavior ─────────────────
   return (
     <div
       style={{
@@ -558,12 +671,14 @@ export function CirclesPage() {
               willChange: 'transform',
             }}
           >
-            {/* Segmented Control - positioned at top */}
-            <SegmentedControl
-              activeSegment={activeSegment}
-              onSegmentChange={handleSegmentChange}
-            />
-            
+            {/* Segmented Control - hidden on desktop (nav tabs handle switching) */}
+            <div className="lg:hidden">
+              <SegmentedControl
+                activeSegment={activeSegment}
+                onSegmentChange={handleSegmentChange}
+              />
+            </div>
+
             {/* Nested AnimatePresence for segment view transitions */}
             <AnimatePresence mode="wait" custom={direction} initial={false}>
               {activeSegment === 'MATCHES' ? (

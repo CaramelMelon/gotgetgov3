@@ -29,11 +29,12 @@ interface CirclesListViewProps {
   hasMore: boolean;
   loadMore: () => Promise<void>;
   loadingMore: boolean;
+  selectedConversationId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function CirclesListView({ conversations, loading, error, onOpenChat, onNewChat, scrollContainerRef, hasMore, loadMore, loadingMore }: CirclesListViewProps) {
+export function CirclesListView({ conversations, loading, error, onOpenChat, onNewChat, scrollContainerRef, hasMore, loadMore, loadingMore, selectedConversationId }: CirclesListViewProps) {
   const { profile, isGuest } = useAuth();
   const { tutorialStep } = useGuestTutorial();
   const [activeTab, setActiveTab] = useState<CirclesTab>('dms');
@@ -44,6 +45,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
   const [showCreateBroadcast, setShowCreateBroadcast] = useState(false);
   const [allContacts, setAllContacts] = useState<Profile[]>([]);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // ── ID-based search state ────────────────────────────────────────────────
   const [idResult, setIdResult] = useState<Profile | null>(null);
@@ -159,52 +161,55 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
         flexDirection: 'column',
         overflow: 'hidden',
         background: 'var(--color-bg)',
+        // Panel-level background keeps list visually distinct from chat area
       }}
     >
       {/* ── Search bar & New Chat ──────────────────────────────────────── */}
-      <div style={{ padding: '16px 16px 12px', flexShrink: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
+      <div style={{ padding: '14px 12px 10px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Search bar */}
           <div
             style={{
               flex: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              background: 'var(--color-surf-2)',
-              borderRadius: 'var(--radius-full)',
-              padding: '10px 14px',
-              border: '1.5px solid var(--color-acc)',
+              gap: 7,
+              background: 'var(--color-surf)',
+              borderRadius: 9,
+              padding: '8px 11px',
+              border: searchFocused || searchQuery
+                ? '1px solid var(--color-acc)'
+                : '1px solid var(--color-bdr)',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+              boxShadow: searchFocused
+                ? '0 0 0 3px var(--color-acc-bg)'
+                : 'none',
             }}
           >
-            <IconSearch size={15} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
+            <IconSearch size={13} style={{ color: searchFocused ? 'var(--color-acc)' : 'var(--color-t3)', flexShrink: 0, transition: 'color 0.15s' }} />
             <input
               type="text"
-              placeholder="Search or start a new circle"
+              placeholder="Search circles…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               style={{
                 flex: 1,
                 background: 'none',
                 border: 'none',
                 outline: 'none',
                 fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
+                fontSize: 12,
                 color: 'var(--color-t1)',
               }}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-t3)' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-t3)', lineHeight: 0 }}
               >
-                <X size={14} />
+                <X size={12} />
               </button>
             )}
           </div>
@@ -214,10 +219,10 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
             aria-label="New message"
             onClick={() => setShowComposeMenu(true)}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-full)',
-              background: 'none',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'var(--color-acc-bg)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -225,9 +230,12 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
               justifyContent: 'center',
               color: 'var(--color-acc)',
               flexShrink: 0,
+              transition: 'background 0.15s',
             }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--color-acc) 22%, transparent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-acc-bg)'; }}
           >
-            <IconPencil size={20} />
+            <IconPencil size={15} />
           </button>
         </div>
       </div>
@@ -243,11 +251,16 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
       )}
 
       {/* ── Tab bar (below stories) ──────────────────────────────────────── */}
-      <div style={{ flexShrink: 0, display: 'flex', padding: '10px 16px 10px', gap: 8 }}>
+      <div style={{
+        flexShrink: 0,
+        display: 'flex',
+        padding: '0 12px',
+        borderBottom: '1px solid var(--color-bdr)',
+      }}>
         {([
-          { id: 'dms' as CirclesTab,       label: 'DMs',       icon: <MessageCircle size={13} /> },
-          { id: 'groups' as CirclesTab,    label: 'Groups',    icon: <Users size={13} /> },
-          { id: 'broadcast' as CirclesTab, label: 'Broadcast', icon: <Megaphone size={13} /> },
+          { id: 'dms' as CirclesTab,       label: 'DMs',       icon: <MessageCircle size={12} /> },
+          { id: 'groups' as CirclesTab,    label: 'Groups',    icon: <Users size={12} /> },
+          { id: 'broadcast' as CirclesTab, label: 'Broadcast', icon: <Megaphone size={12} /> },
         ]).map((tab) => {
           const active = activeTab === tab.id;
           return (
@@ -256,14 +269,18 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
               onClick={() => setActiveTab(tab.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '7px 14px',
-                borderRadius: 'var(--radius-full)',
-                border: active ? '1.5px solid var(--color-acc)' : '1px solid var(--color-bdr)',
-                background: 'var(--color-surf-2)',
-                color: active ? 'var(--color-acc)' : 'var(--color-t2)',
-                fontFamily: 'var(--font-body)', fontWeight: active ? 700 : 600, fontSize: 13,
-                cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
+                padding: '10px 12px 9px',
+                border: 'none',
+                borderBottom: active ? '2px solid var(--color-acc)' : '2px solid transparent',
+                background: 'none',
+                color: active ? 'var(--color-t1)' : 'var(--color-t3)',
+                fontFamily: 'var(--font-body)', fontWeight: active ? 600 : 400, fontSize: 12,
+                cursor: 'pointer', transition: 'color 0.15s, border-color 0.15s',
+                flexShrink: 0, marginBottom: -1,
+                letterSpacing: active ? '-0.01em' : '0',
               }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)'; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t3)'; }}
             >
               {tab.icon}
               {tab.label}
@@ -274,7 +291,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
 
       {/* ── Section label ────────────────────────────────────────────────── */}
       {!loading && !isIdSearch && filtered.length > 0 && activeTab !== 'broadcast' && (
-        <div style={{ padding: '4px 16px 2px', flexShrink: 0 }}>
+        <div style={{ padding: '10px 14px 4px', flexShrink: 0 }}>
           <SectionLabel label={activeTab === 'dms' ? 'Messages' : 'Groups'} />
         </div>
       )}
@@ -287,6 +304,8 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
           paddingBottom: 8,
+          paddingLeft: 4,
+          paddingRight: 4,
         } as React.CSSProperties}
       >
         {/* ── Broadcast tab UI ─────────────────────────────────────────── */}
@@ -381,6 +400,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
               key={item.conversation.id}
               item={item}
               onClick={onOpenChat}
+              isSelected={selectedConversationId === item.conversation.id}
             />
           ))}
 
@@ -636,10 +656,10 @@ function SectionLabel({ label }: { label: string }) {
     <span
       style={{
         fontFamily: 'var(--font-body)',
-        fontSize: 'var(--text-2xs)',
+        fontSize: 9,
         color: 'var(--color-t3)',
-        fontWeight: 600,
-        letterSpacing: '0.06em',
+        fontWeight: 700,
+        letterSpacing: '0.10em',
         textTransform: 'uppercase',
       }}
     >

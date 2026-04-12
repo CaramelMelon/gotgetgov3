@@ -163,23 +163,31 @@ export function ResultsPage() {
   };
 
   return (
-    <div style={{ paddingBottom: 24, paddingLeft: 16, paddingRight: 16, paddingTop: 8 }}>
+    <div style={{ paddingBottom: 24, paddingLeft: 16, paddingRight: 16, paddingTop: 16 }}>
 
-      {/* ── Score Match button ───────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+      {/* ── Page header ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h1 style={{
+          fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+          color: 'var(--color-t1)', margin: 0, letterSpacing: '-0.02em',
+        }}>
+          My Results
+        </h1>
         <button
           onClick={() => setShowScoreModal(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'var(--color-acc)', color: '#fff',
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: 'var(--color-acc)', color: '#000',
             border: 'none', borderRadius: 'var(--radius-full)',
-            padding: '10px 20px', cursor: 'pointer',
+            padding: '8px 18px', cursor: 'pointer',
             fontFamily: 'var(--font-body)', fontWeight: 700,
-            fontSize: 'var(--text-sm)', letterSpacing: '0.04em',
-            boxShadow: '0 4px 16px rgba(22,212,106,0.3)',
+            fontSize: 'var(--text-sm)',
+            transition: 'opacity 0.15s',
           }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
         >
-          <PlusCircle size={18} />
+          <PlusCircle size={15} />
           Score Match
         </button>
       </div>
@@ -360,24 +368,58 @@ export function ResultsPage() {
                 </div>
               )}
 
+              {/* ── ELO Sparkline ─────────────────────────────────────── */}
+              {confirmedResults.length >= 2 && (
+                <EloSparkline matches={confirmedResults} currentUserId={user?.id} />
+              )}
+
               {/* ── Stats ─────────────────────────────────────────────── */}
               <StatsOverview stats={stats} />
 
-              {/* ── History title ─────────────────────────────────────── */}
-              <h2 style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22,
-                color: 'var(--color-t1)', textAlign: 'center',
-                margin: '28px 0 14px',
-              }}>
-                My Match History
-              </h2>
+              {/* ── History ───────────────────────────────────────────── */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{
+                  fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-t3)',
+                }}>
+                  Match History
+                </span>
+                {matchResults.length > 0 && (
+                  <span style={{
+                    fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700,
+                    background: 'var(--color-surf-2)', color: 'var(--color-t2)',
+                    padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                  }}>
+                    {matchResults.length}
+                  </span>
+                )}
+              </div>
 
               {matchResults.length === 0 ? (
-                <p style={{ textAlign: 'center', color: 'var(--color-t2)', padding: '40px 0', fontFamily: 'var(--font-body)' }}>
-                  No match results yet.
-                </p>
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                  padding: '32px 20px',
+                  background: 'var(--color-surf)',
+                  borderRadius: 'var(--radius-xl)',
+                  border: '1.5px dashed var(--color-bdr)',
+                }}>
+                  <Trophy size={28} style={{ color: 'var(--color-t3)' }} />
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t3)', margin: 0, textAlign: 'center' }}>
+                    No matches recorded yet
+                  </p>
+                  <button
+                    onClick={() => setShowScoreModal(true)}
+                    style={{
+                      fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+                      color: 'var(--color-acc)', background: 'none', border: 'none',
+                      cursor: 'pointer', padding: 0,
+                    }}
+                  >
+                    Score your first match
+                  </button>
+                </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {matchResults.map((match) => (
                     <MatchCard key={match.id} match={match} currentUserId={user?.id} />
                   ))}
@@ -408,18 +450,99 @@ export function ResultsPage() {
   );
 }
 
+/* ─── ELO Sparkline ────────────────────────────────────────────────────── */
+
+function EloSparkline({ matches, currentUserId }: { matches: MatchResult[]; currentUserId?: string }) {
+  const confirmed = matches
+    .filter((m) => m.status === 'confirmed')
+    .slice()
+    .sort((a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime());
+
+  if (confirmed.length < 2) return null;
+
+  // Build running ELO from a 1200 base
+  const BASE = 1200;
+  const WIN_DELTA = 20;
+  const LOSS_DELTA = -15;
+  const points: number[] = [BASE];
+  for (const m of confirmed) {
+    const me = m.players.find((p) => p.userId === currentUserId);
+    const won = me && m.winnerTeam === me.teamNumber;
+    points.push(points[points.length - 1] + (won ? WIN_DELTA : LOSS_DELTA));
+  }
+
+  const W = 480;
+  const H = 64;
+  const pad = 8;
+  const minVal = Math.min(...points);
+  const maxVal = Math.max(...points);
+  const range = maxVal - minVal || 1;
+
+  const toX = (i: number) => pad + (i / (points.length - 1)) * (W - pad * 2);
+  const toY = (v: number) => H - pad - ((v - minVal) / range) * (H - pad * 2);
+
+  const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(' ');
+  const lastUp = points[points.length - 1] >= points[points.length - 2];
+  const color = lastUp ? 'var(--color-acc)' : 'var(--color-red)';
+  const currentElo = points[points.length - 1];
+
+  return (
+    <div style={{
+      background: 'var(--color-surf)', border: '1px solid var(--color-bdr)',
+      borderRadius: 'var(--radius-xl)', padding: '16px 20px', marginBottom: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-t3)', margin: 0 }}>
+            ELO Trend
+          </p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--color-t1)', letterSpacing: '-0.02em', margin: '4px 0 0' }}>
+            {currentElo}
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {lastUp
+            ? <TrendingUp size={16} style={{ color: 'var(--color-acc)' }} />
+            : <TrendingDown size={16} style={{ color: 'var(--color-red)' }} />}
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: lastUp ? 'var(--color-acc)' : 'var(--color-red)' }}>
+            {lastUp ? '+' : ''}{points[points.length - 1] - points[points.length - 2]}
+          </span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H, display: 'block' }} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Fill area */}
+        <path
+          d={`${path} L ${toX(points.length - 1).toFixed(1)} ${H} L ${toX(0).toFixed(1)} ${H} Z`}
+          fill="url(#sparkGrad)"
+        />
+        {/* Line */}
+        <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* End dot */}
+        <circle cx={toX(points.length - 1)} cy={toY(points[points.length - 1])} r="4" fill={color} />
+      </svg>
+    </div>
+  );
+}
+
 /* ─── StatsOverview ────────────────────────────────────────────────────── */
 
 interface StatsData { matchesPlayed: number; wins: number; winRate: string; }
 
 function StatsOverview({ stats }: { stats: StatsData }) {
+  const losses = stats.matchesPlayed - stats.wins;
   const items = [
-    { label: 'Matches Played', value: stats.matchesPlayed },
-    { label: 'Wins', value: stats.wins },
+    { label: 'Played', value: String(stats.matchesPlayed) },
+    { label: 'Record', value: stats.matchesPlayed > 0 ? `${stats.wins}W · ${losses}L` : '—' },
     { label: 'Win Rate', value: stats.winRate },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
       {items.map(({ label, value }) => (
         <div
           key={label}
@@ -428,10 +551,10 @@ function StatsOverview({ stats }: { stats: StatsData }) {
             borderRadius: 'var(--radius-xl)', padding: '14px 10px', textAlign: 'center',
           }}
         >
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 26, color: 'var(--color-t1)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: 'var(--color-t1)', margin: 0, letterSpacing: '-0.02em' }}>
             {value}
           </p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t2)', margin: '4px 0 0' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t3)', margin: '4px 0 0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {label}
           </p>
         </div>
@@ -449,57 +572,51 @@ function MatchCard({ match, currentUserId }: { match: MatchResult; currentUserId
   const opponent = match.players.find((p) => p.userId !== currentUserId);
 
   const isWin = match.status === 'confirmed' && won;
-  const isLoss = match.status === 'confirmed' && !won;
   const isPending = match.status === 'pending';
   const isDisputed = match.status === 'disputed';
 
-  const iconBg = isPending ? 'rgba(255,179,0,0.15)' : isDisputed ? 'rgba(255,59,48,0.15)' : isWin ? 'rgba(22,212,106,0.15)' : 'rgba(255,59,48,0.15)';
-  const iconColor = isPending ? '#FFB300' : isDisputed ? 'var(--color-red)' : isWin ? 'var(--color-acc)' : 'var(--color-red)';
+  const leftColor = isPending
+    ? '#FFB300'
+    : isDisputed
+    ? 'var(--color-red)'
+    : isWin
+    ? 'var(--color-acc)'
+    : 'var(--color-red)';
 
-  let chipLabel = '';
-  let chipColor = '';
-  let chipBg = '';
-  if (isPending) { chipLabel = 'Awaiting'; chipColor = '#FFB300'; chipBg = 'rgba(255,179,0,0.15)'; }
-  else if (isDisputed) { chipLabel = 'Disputed'; chipColor = 'var(--color-red)'; chipBg = 'rgba(255,59,48,0.15)'; }
-  else if (isWin) { chipLabel = 'Win'; chipColor = 'var(--color-acc)'; chipBg = 'var(--color-acc-bg)'; }
-  else if (isLoss) { chipLabel = 'Loss'; chipColor = 'var(--color-red)'; chipBg = 'rgba(255,59,48,0.12)'; }
+  const resultLabel = isPending ? 'Awaiting' : isDisputed ? 'Disputed' : isWin ? 'W' : 'L';
+  const resultColor = leftColor;
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
-      padding: '14px 16px', borderRadius: 'var(--radius-xl)',
+      padding: '12px 14px', borderRadius: 'var(--radius-xl)',
       background: 'var(--color-surf)', border: '1px solid var(--color-bdr)',
+      borderLeft: `3px solid ${leftColor}`,
+      transition: 'border-color 0.12s',
     }}>
-      {/* Status icon */}
+      {/* Result badge */}
       <div style={{
-        width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: iconBg,
+        width: 28, flexShrink: 0, textAlign: 'center',
+        fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800,
+        color: resultColor, letterSpacing: '0.02em',
       }}>
-        {isPending
-          ? <span style={{ fontSize: 16, fontWeight: 800, color: iconColor }}>?</span>
-          : isDisputed
-          ? <span style={{ fontSize: 14, fontWeight: 800, color: iconColor }}>D</span>
-          : isWin
-          ? <Trophy size={22} style={{ color: iconColor }} />
-          : <span style={{ fontSize: 20, fontWeight: 800, color: iconColor }}>L</span>
-        }
+        {resultLabel}
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          {chipLabel && <Chip label={chipLabel} color={chipColor} bg={chipBg} />}
+        <p style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14, color: 'var(--color-t1)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          vs {opponent?.name || 'Opponent'}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t2)' }}>
+            {match.score.formatted || '—'}
+          </span>
+          <span style={{ color: 'var(--color-bdr-s)', fontSize: 10 }}>·</span>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t3)' }}>
             {sport?.name || match.sport}
           </span>
         </div>
-        <p style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14, color: 'var(--color-t1)', margin: '0 0 3px' }}>
-          vs {opponent?.name || 'Opponent'}
-        </p>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t2)' }}>
-          {match.score.formatted}
-        </span>
       </div>
 
       {/* Date */}

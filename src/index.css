@@ -135,17 +135,34 @@ html, body {
 
 @media (min-width: 1024px) {
   :root {
-    --content-max-w: 860px;
+    /* On desktop the sidebar layout handles width — content fills flex-1 */
+    --content-max-w: 100%;
     --page-pb: 24px;
     --interaction-bar-bottom: 16px;
     --desktop-nav-height: 64px;
   }
 }
 
-@media (min-width: 1280px) {
-  :root {
-    --content-max-w: 960px;
+/* ─── Accessibility: reduced motion ──────────────────────────────────────── */
+/* ─── Desktop card hover lift ─────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  /* Feed cards — lift on hover */
+  .news-card:hover,
+  .feed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
+
+  /* Page fade-in on mount */
+  .page-fade {
+    animation: pageFadeIn 0.18s ease forwards;
+  }
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ─── Accessibility: reduced motion ──────────────────────────────────────── */

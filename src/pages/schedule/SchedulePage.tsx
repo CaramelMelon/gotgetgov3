@@ -353,148 +353,178 @@ export function SchedulePage() {
       </div>
 
       {/* ── Calendar Connect Banner ───────────────────────────────────────── */}
-      <CalendarBanner
-        key={calendarBannerKey}
-        onConnected={() => setCalendarBannerKey((k) => k + 1)}
-      />
-
-      {/* ── 2-Week Calendar Grid ───────────────────────────────────────────── */}
-      <div style={{ padding: '0 var(--space-5) var(--space-4)' }}>
-        <div style={{
-          background: 'var(--color-surf)', borderRadius: 'var(--radius-xl)',
-          padding: '16px', boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-        }}>
-          {/* Header: prev / range label / next */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <button
-              onClick={() => setWeekOffset((o) => o - 1)}
-              aria-label="Previous 2 weeks"
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--color-bdr)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-t2)', flexShrink: 0 }}
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--color-t1)' }}>
-              {rangeLabel}
-            </span>
-            <button
-              onClick={() => setWeekOffset((o) => o + 1)}
-              aria-label="Next 2 weeks"
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--color-bdr)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-t2)', flexShrink: 0 }}
-            >
-              <ChevronRight size={15} />
-            </button>
-          </div>
-
-          {/* Weekday headers */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-              <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: 'var(--color-t3)', letterSpacing: '0.04em' }}>
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Day grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 52px))', gap: 4, justifyContent: 'space-between' }}>
-            {twoWeekDays.map((day) => {
-              const isSelected = isSameDay(day, selectedDate);
-              const hasEvent = hasEventOnDay(day);
-              const isToday = isDateToday(day);
-
-              return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => setSelectedDate(day)}
-                  aria-label={format(day, 'EEEE, MMMM d')}
-                  style={{
-                    width: '100%',
-                    maxWidth: 52,
-                    aspectRatio: '1', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    borderRadius: '50%', border: 'none', cursor: 'pointer',
-                    background: isSelected ? 'var(--color-acc)' : 'transparent',
-                    position: 'relative', padding: 0, outline: 'none',
-                  }}
-                >
-                  <span style={{
-                    fontFamily: 'var(--font-body)', fontSize: 14,
-                    fontWeight: isToday || isSelected ? 700 : 400,
-                    color: isSelected ? '#fff' : isToday ? 'var(--color-acc)' : 'var(--color-t1)',
-                    lineHeight: 1,
-                  }}>
-                    {format(day, 'd')}
-                  </span>
-                  {hasEvent && (
-                    <div style={{
-                      width: 4, height: 4, borderRadius: '50%',
-                      background: isSelected ? '#fff' : 'var(--color-acc)',
-                      position: 'absolute', bottom: 4,
-                    }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <div className="lg:hidden">
+        <CalendarBanner
+          key={calendarBannerKey}
+          onConnected={() => setCalendarBannerKey((k) => k + 1)}
+        />
       </div>
 
-
-      {/* ── Today's Agenda ─────────────────────────────────────────────────── */}
-      <div style={{ padding: '0 var(--space-5) var(--space-4)' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 'var(--space-3)',
-        }}>
-          <span style={{
-            fontFamily: 'var(--font-body)', fontSize: 'var(--text-xs)',
-            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em',
-            color: 'var(--color-t2)',
+      {/* ── Desktop: Calendar + Day Panel side by side / Mobile: stacked ─── */}
+      <div
+        className="lg:flex lg:gap-5 lg:items-start"
+        style={{ padding: '0 var(--space-5) var(--space-4)' }}
+      >
+        {/* Calendar grid */}
+        <div className="lg:flex-[3]" style={{ marginBottom: 'var(--space-4)' }}>
+          <div style={{
+            background: 'var(--color-surf)', borderRadius: 'var(--radius-xl)',
+            padding: '16px', boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
           }}>
-            {isDateToday(selectedDate) ? "Today's Agenda" : format(selectedDate, 'EEE, MMM d')}
-          </span>
-          {isDateToday(selectedDate) && selectedDaySchedule.length > 0 && (
-            <span style={{
-              fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
-              background: 'var(--color-acc-bg)', color: 'var(--color-acc)',
-              padding: '2px 10px', borderRadius: 'var(--radius-full)',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-              border: '1px solid color-mix(in srgb, var(--color-acc) 25%, transparent)',
-            }}>
-              Active
-            </span>
-          )}
+            {/* Header: prev / range label / next */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <button
+                onClick={() => setWeekOffset((o) => o - 1)}
+                aria-label="Previous 2 weeks"
+                style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--color-bdr)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-t2)', flexShrink: 0 }}
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--color-t1)' }}>
+                {rangeLabel}
+              </span>
+              <button
+                onClick={() => setWeekOffset((o) => o + 1)}
+                aria-label="Next 2 weeks"
+                style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--color-bdr)', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-t2)', flexShrink: 0 }}
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+
+            {/* Weekday headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: 'var(--color-t3)', letterSpacing: '0.04em' }}>
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Day grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 52px))', gap: 4, justifyContent: 'space-between' }}>
+              {twoWeekDays.map((day) => {
+                const isSelected = isSameDay(day, selectedDate);
+                const hasEvent = hasEventOnDay(day);
+                const isToday = isDateToday(day);
+
+                return (
+                  <button
+                    key={day.toISOString()}
+                    onClick={() => setSelectedDate(day)}
+                    aria-label={format(day, 'EEEE, MMMM d')}
+                    style={{
+                      width: '100%',
+                      maxWidth: 52,
+                      aspectRatio: '1', display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center',
+                      borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: isSelected ? 'var(--color-acc)' : 'transparent',
+                      position: 'relative', padding: 0, outline: 'none',
+                      transition: 'background 0.12s',
+                    }}
+                  >
+                    <span style={{
+                      fontFamily: 'var(--font-body)', fontSize: 14,
+                      fontWeight: isToday || isSelected ? 700 : 400,
+                      color: isSelected ? '#fff' : isToday ? 'var(--color-acc)' : 'var(--color-t1)',
+                      lineHeight: 1,
+                    }}>
+                      {format(day, 'd')}
+                    </span>
+                    {hasEvent && (
+                      <div style={{
+                        width: 4, height: 4, borderRadius: '50%',
+                        background: isSelected ? '#fff' : 'var(--color-acc)',
+                        position: 'absolute', bottom: 4,
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Calendar sync banner — desktop only, below calendar */}
+          <div className="hidden lg:block" style={{ marginTop: 12 }}>
+            <CalendarBanner
+              key={calendarBannerKey}
+              onConnected={() => setCalendarBannerKey((k) => k + 1)}
+            />
+          </div>
         </div>
 
-        {loadingSchedule ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              border: '2px solid var(--color-acc)', borderTopColor: 'transparent',
-              animation: 'spin 0.7s linear infinite',
-            }} />
-          </div>
-        ) : selectedDaySchedule.length === 0 ? (
+        {/* Day panel */}
+        <div className="lg:flex-[2]">
+          {/* Panel header */}
           <div style={{
-            textAlign: 'center', padding: '32px 0',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 'var(--space-3)',
           }}>
-            <CalendarDays size={36} style={{ color: 'var(--color-t3)' }} />
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', color: 'var(--color-t3)' }}>
-              No events on this day
-            </p>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 'var(--text-xs)',
+              fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: 'var(--color-t2)',
+            }}>
+              {isDateToday(selectedDate) ? "Today's Agenda" : format(selectedDate, 'EEE, MMM d')}
+            </span>
+            {isDateToday(selectedDate) && selectedDaySchedule.length > 0 && (
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
+                background: 'var(--color-acc-bg)', color: 'var(--color-acc)',
+                padding: '2px 10px', borderRadius: 'var(--radius-full)',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                border: '1px solid color-mix(in srgb, var(--color-acc) 25%, transparent)',
+              }}>
+                Active
+              </span>
+            )}
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {selectedDaySchedule.map((item) => (
-              <SwipeableScheduleCard
-                key={item.id}
-                item={item}
-                onCancel={() => handleCancelScheduleItem(item.id)}
-                onPlayerClick={handlePlayerClick}
-              />
-            ))}
-          </div>
-        )}
+
+          {loadingSchedule ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                border: '2px solid var(--color-acc)', borderTopColor: 'transparent',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+            </div>
+          ) : selectedDaySchedule.length === 0 ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+              padding: '28px 20px',
+              background: 'var(--color-surf)',
+              borderRadius: 'var(--radius-xl)',
+              border: '1.5px dashed var(--color-bdr)',
+            }}>
+              <CalendarDays size={28} style={{ color: 'var(--color-t3)' }} />
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', color: 'var(--color-t3)', margin: 0, textAlign: 'center' }}>
+                Nothing on {isDateToday(selectedDate) ? 'today' : format(selectedDate, 'MMM d')}
+              </p>
+              <button
+                onClick={() => navigate('/discover')}
+                style={{
+                  fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+                  color: 'var(--color-acc)', background: 'none', border: 'none',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >
+                Find players to challenge
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {selectedDaySchedule.map((item) => (
+                <SwipeableScheduleCard
+                  key={item.id}
+                  item={item}
+                  onCancel={() => handleCancelScheduleItem(item.id)}
+                  onPlayerClick={handlePlayerClick}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Match History ─────────────────────────────────────────────────── */}

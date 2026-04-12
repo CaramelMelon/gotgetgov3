@@ -4,6 +4,7 @@ import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, ChevronDown, Plus 
 import { Header } from './Header';
 import { BottomTabBar } from './BottomTabBar';
 import { DesktopNav } from './DesktopNav';
+import { DesktopSidebar } from './DesktopSidebar';
 import { CreateMenu, type CreateMenuItemId } from './CreateMenu';
 type CreateMenuItem = CreateMenuItemId;
 import { SearchModal } from './SearchModal';
@@ -143,18 +144,24 @@ function AppShellContent({ children }: AppShellProps) {
       <div
         className="hidden lg:block fixed top-0 left-0 right-0 z-50"
         style={{
-          borderBottom: '1px solid var(--color-bdr)',
-          background: 'rgba(17,16,9,0.88)',
+          borderBottom: '1px solid var(--color-nav-bdr)',
+          background: 'var(--color-nav-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           height: 64,
         }}
       >
         <div
-          className="h-full flex items-center justify-between"
-          style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}
+          className="h-full"
+          style={{
+            maxWidth: 1280, margin: '0 auto', padding: '0 24px',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
+            alignItems: 'center',
+          }}
         >
-          <div className="flex items-center" style={{ gap: 32 }}>
+          {/* Left: logo only */}
+          <div className="flex items-center">
             <button
               onClick={() => navigate('/discover')}
               style={{
@@ -167,36 +174,13 @@ function AppShellContent({ children }: AppShellProps) {
             >
               <img src={logoSrc} alt="GotGetGo" style={{ height: 28, width: 'auto', display: 'block' }} />
             </button>
-            <DesktopNav unreadMessages={unreadMessages} />
           </div>
 
-          {/* Center: Create button */}
-          <button
-            onClick={() => setIsCreateMenuOpen(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 16px', borderRadius: 9999,
-              border: '1.5px solid var(--color-bdr)',
-              background: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              color: 'var(--color-t2)',
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-acc)';
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-acc)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-bdr)';
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)';
-            }}
-            aria-label="Create"
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            Create
-          </button>
+          {/* Center: nav tabs — truly centered in the bar */}
+          <DesktopNav unreadMessages={unreadMessages} />
 
-          <div className="flex items-center" style={{ gap: 4 }}>
+          {/* Right: actions — justify-end so they hug the right edge */}
+          <div className="flex items-center justify-end" style={{ gap: 4 }}>
             <DesktopIconButton onClick={() => setIsSearchOpen(true)} label="Search">
               <Search size={20} strokeWidth={2} />
             </DesktopIconButton>
@@ -209,6 +193,27 @@ function AppShellContent({ children }: AppShellProps) {
               </DesktopIconButton>
               <NotificationBadge count={unreadNotifications} />
             </div>
+
+            {/* Create button — right cluster, before avatar */}
+            <button
+              onClick={() => setIsCreateMenuOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 9999,
+                background: 'var(--color-acc)',
+                border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
+                color: '#000',
+                transition: 'opacity 0.15s',
+                marginLeft: 4,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+              aria-label="Create"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Create
+            </button>
             {/* Profile button — no session → /auth; logged-in opens dropdown */}
             {!user ? (
               <button
@@ -306,15 +311,26 @@ function AppShellContent({ children }: AppShellProps) {
         </div>
       )}
 
-      {/* Main content */}
-      <main
-        className={cn(
-          'flex-1 min-h-0 overflow-y-auto overflow-x-hidden',
-        )}
-        style={{ display: 'flex', flexDirection: 'column', paddingTop: 'var(--desktop-nav-height, 0px)' }}
+      {/* Main content + desktop sidebar */}
+      <div
+        className="flex-1 min-h-0 flex"
+        style={{
+          maxWidth: 1340,
+          width: '100%',
+          margin: '0 auto',
+          paddingTop: 'var(--desktop-nav-height, 0px)',
+        }}
       >
-        {children}
-      </main>
+        <main
+          className={cn(
+            'flex-1 min-h-0 overflow-y-auto overflow-x-hidden',
+          )}
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          {children}
+        </main>
+        <DesktopSidebar />
+      </div>
 
       {/* Mobile tab bar — hidden when in conversation view */}
       {!useNavVisibility().hideNav && (

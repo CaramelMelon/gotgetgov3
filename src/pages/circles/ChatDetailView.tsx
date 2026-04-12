@@ -78,11 +78,12 @@ interface ChatDetailViewProps {
   conversationItem: ConversationItem;
   onBack: () => void;
   markAsRead: (conversationId: string) => Promise<void>;
+  hideBackButton?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDetailViewProps) {
+export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackButton = false }: ChatDetailViewProps) {
   const isDemo = conversationItem.conversation.id === EMMA_CONV_ID;
   const { tutorialStep, tutorialMessages, addUserMessage, advanceTutorial } = useGuestTutorial();
   const navigate = useNavigate();
@@ -250,34 +251,38 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDet
         style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '12px 12px 12px 8px',
+          padding: '10px 16px 10px 12px',
           gap: 10,
           background: 'var(--color-surf)',
           flexShrink: 0,
-          // Tonal bottom shadow — no border
-          boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+          borderBottom: '1px solid var(--color-bdr)',
         }}
       >
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          aria-label="Go back"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 'var(--radius-full)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-t1)',
-            flexShrink: 0,
-          }}
-        >
-          <IconArrowLeft size={22} />
-        </button>
+        {/* Back button — hidden on desktop two-panel layout */}
+        {!hideBackButton && (
+          <button
+            onClick={onBack}
+            aria-label="Go back"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-t2)',
+              flexShrink: 0,
+              transition: 'color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surf-2)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t1)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)'; }}
+          >
+            <IconArrowLeft size={18} />
+          </button>
+        )}
 
         {/* Avatar + name + status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
@@ -293,9 +298,9 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDet
                   position: 'absolute',
                   bottom: 1,
                   right: 1,
-                  width: 10,
-                  height: 10,
-                  borderRadius: 'var(--radius-full)',
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
                   background: 'var(--color-acc)',
                   border: '2px solid var(--color-surf)',
                 }}
@@ -306,14 +311,15 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDet
           <div style={{ minWidth: 0 }}>
             <p
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 17,
+                fontFamily: 'var(--font-body)',
+                fontSize: 14,
                 fontWeight: 700,
                 color: 'var(--color-t1)',
                 margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                letterSpacing: '-0.01em',
               }}
             >
               {conversationItem.displayName}
@@ -321,15 +327,14 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDet
             <p
               style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: 12,
+                fontSize: 11,
                 color: online ? 'var(--color-acc)' : 'var(--color-t3)',
-                fontWeight: online ? 700 : 400,
+                fontWeight: online ? 600 : 400,
                 margin: 0,
-                textTransform: online ? 'uppercase' : 'none',
-                letterSpacing: online ? '0.06em' : 0,
+                letterSpacing: online ? '0.04em' : 0,
               }}
             >
-              {online ? 'Online' : formatLastSeen(otherLastSeen)}
+              {online ? 'Active now' : formatLastSeen(otherLastSeen)}
             </p>
           </div>
         </div>
@@ -351,11 +356,12 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead }: ChatDet
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '16px 12px',
+          padding: '12px 16px 8px',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
           WebkitOverflowScrolling: 'touch',
+          background: 'var(--color-bg)',
         } as React.CSSProperties}
       >
         {loading && <LoadingSpinner />}
@@ -503,25 +509,26 @@ function DateSeparator({ date }: { date: string }) {
     <div
       style={{
         display: 'flex',
-        justifyContent: 'center',
-        margin: '12px 0 8px',
+        alignItems: 'center',
+        gap: 10,
+        margin: '16px 4px 10px',
       }}
     >
+      <div style={{ flex: 1, height: 1, background: 'var(--color-bdr)' }} />
       <span
         style={{
           fontFamily: 'var(--font-body)',
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: 600,
-          letterSpacing: '0.05em',
+          letterSpacing: '0.10em',
           textTransform: 'uppercase',
           color: 'var(--color-t3)',
-          background: 'var(--color-surf-2)',
-          borderRadius: 'var(--radius-full)',
-          padding: '4px 12px',
+          flexShrink: 0,
         }}
       >
         {formatDaySeparator(date)}
       </span>
+      <div style={{ flex: 1, height: 1, background: 'var(--color-bdr)' }} />
     </div>
   );
 }
