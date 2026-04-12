@@ -578,6 +578,9 @@ export function CirclesPage() {
             onNewChat={handleNewChat}
             scrollContainerRef={circlesScrollRef}
             selectedConversationId={selectedId}
+            hasMore={hasMore}
+            loadMore={loadMore}
+            loadingMore={loadingMore}
           />
         </div>
 
