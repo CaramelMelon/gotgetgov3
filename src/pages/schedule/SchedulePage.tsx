@@ -13,6 +13,7 @@ import type { PanInfo } from 'framer-motion';
 import { PlayerProfileModal } from '@/components/ui';
 import { AvailabilityModal } from '@/components/availability';
 import { CalendarBanner, CalendarPromptModal } from '@/components/schedule';
+import { ScheduleSkeleton } from '@/components/skeletons';
 import { useFilters } from '@/contexts/FilterContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -482,13 +483,7 @@ export function SchedulePage() {
           </div>
 
           {loadingSchedule ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                border: '2px solid var(--color-acc)', borderTopColor: 'transparent',
-                animation: 'spin 0.7s linear infinite',
-              }} />
-            </div>
+            <ScheduleSkeleton />
           ) : selectedDaySchedule.length === 0 ? (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,

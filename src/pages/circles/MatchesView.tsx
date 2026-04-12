@@ -289,6 +289,30 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
     feedData.weeklyMatches.length === 0 &&
     feedData.tournaments.length === 0;
 
+  // Show skeleton loading state
+  if (loading && hasNoData) {
+    return (
+      <div
+        ref={scrollContainerRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          padding: '0 16px 80px',
+          background: 'var(--color-bg)',
+        }}
+        data-view="matches"
+      >
+        <HeroSectionSkeleton />
+        <ChallengesSectionSkeleton />
+        <OpenMatchesSectionSkeleton />
+        <DigestSectionSkeleton />
+        <TournamentsSectionSkeleton />
+      </div>
+    );
+  }
+
   // Show empty state if no data at all
   if (hasNoData && !loading) {
     return (

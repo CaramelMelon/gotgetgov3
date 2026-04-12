@@ -3,6 +3,7 @@ import { Inbox } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FilterContext';
 import type { NewsFilter } from '@/types/feed';
+import { FeedSkeleton } from '@/components/skeletons';
 import {
   FeedHeader,
   SegmentStrip,
@@ -175,6 +176,10 @@ export function FeedPage() {
     feedData.openMatches.length === 0 && 
     feedData.weeklyMatches.length === 0 && 
     feedData.tournaments.length === 0;
+
+  if (loading) {
+    return <FeedSkeleton />;
+  }
 
   return (
     <div

@@ -6,6 +6,7 @@ import { eloMatchScore, getLevelElo } from '../lib/elo';
 import { FilterTriptych } from '../components/layout/FilterTriptych';
 import { InteractionBar } from '../components/discover/InteractionBar';
 import { SwipeDeck } from '../components/discover/SwipeDeck';
+import { DiscoverSkeleton } from '../components/skeletons';
 import type { DiscoverPlayer, FilterSport, FilterSkill, MatchRecord } from '../types/discover';
 import type { SportType } from '../types/index';
 
@@ -272,13 +273,7 @@ export function DiscoverPage() {
   }
 
   if (loading) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', color: 'var(--color-t2)' }}>
-          Loading...
-        </div>
-      </div>
-    );
+    return <DiscoverSkeleton />;
   }
 
   return (

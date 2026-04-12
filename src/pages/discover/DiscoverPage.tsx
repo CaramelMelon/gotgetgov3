@@ -9,6 +9,7 @@ import { FilterTriptych } from '../../components/layout/FilterTriptych';
 import type { FilterTriptychHandle } from '../../components/layout/FilterTriptych';
 import { InteractionBar } from '../../components/discover/InteractionBar';
 import { SwipeDeck } from '../../components/discover/SwipeDeck';
+import { DiscoverSkeleton } from '../../components/skeletons';
 import { EMMA_DISCOVER_PLAYER, EMMA_USER_ID } from '../../data/emmaDemoProfile';
 import type { DiscoverPlayer, FilterSport, FilterSkill, MatchRecord } from '../../types/discover';
 import type { SportType } from '../../types/index';
@@ -348,13 +349,7 @@ export function DiscoverPage() {
   }
 
   if (!isGuest && loading) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', color: 'var(--color-t2)' }}>
-          Loading...
-        </div>
-      </div>
-    );
+    return <DiscoverSkeleton />;
   }
 
   return (
