@@ -9,6 +9,7 @@ import { ScoreMatchModal } from '@/components/results';
 import { fetchMatchResults, fetchPendingScoreMatches, fetchPendingConfirmations, confirmResult, disputeResult } from '@/lib/scoring';
 import { supabase } from '@/lib/supabase';
 import { getInitials } from '@/lib/avatar-utils';
+import { ResultsSkeleton } from '@/components/skeletons';
 import {
   sampleLadderStandings as mockLadderStandings,
   sampleLeagueStandings as mockLeagueStandings,
@@ -242,9 +243,7 @@ export function ResultsPage() {
           )}
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px 0' }}>
-              <Loader2 size={28} style={{ color: 'var(--color-acc)', animation: 'spin 0.8s linear infinite' }} />
-            </div>
+            <ResultsSkeleton />
           ) : error ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '48px 0' }}>
               <AlertCircle size={28} style={{ color: 'var(--color-red)' }} />

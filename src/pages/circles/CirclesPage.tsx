@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Users } from 'lucide-react';
+import { CirclesSkeleton } from '../../components/skeletons';
 import { CirclesListView } from './CirclesListView';
 import { ChatDetailView } from './ChatDetailView';
 import { MatchesView } from './MatchesView';
@@ -164,9 +165,14 @@ export function CirclesPage() {
   // Sync segment when desktop nav tab changes (?view= param updates without unmounting)
   useEffect(() => {
     if (targetConversationId) return; // deep link takes priority
-    if (viewParam === 'circles') setActiveSegment('CIRCLES');
-    else if (viewParam === 'matches') setActiveSegment('MATCHES');
-  }, [viewParam, targetConversationId]);
+    if (viewParam === 'circles') {
+      setActiveSegment('CIRCLES');
+    } else if (viewParam === 'matches') {
+      setActiveSegment('MATCHES');
+      setScreen({ view: 'list' }); // reset chat so it doesn't bleed into matches tab
+      setHideNav(false);
+    }
+  }, [viewParam, targetConversationId, setHideNav]);
   const [feedData, setFeedData] = useState<FeedData>({
     heroMatch: null,
     challenges: [],
@@ -219,7 +225,10 @@ export function CirclesPage() {
     setDirection(newDirection);
     
     setActiveSegment(segment);
-  }, [activeSegment]);
+    // Reset chat view when switching segments so it doesn't bleed into the other tab
+    setScreen({ view: 'list' });
+    setHideNav(false);
+  }, [activeSegment, setHideNav]);
 
   const handleRefresh = useCallback(() => {
     if (!user) return;

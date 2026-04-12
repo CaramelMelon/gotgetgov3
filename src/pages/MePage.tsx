@@ -14,6 +14,7 @@ import {
 import { ProfileHero } from '../components/me/ProfileHero';
 import { SportRow } from '../components/me/SportRow';
 import { SettingsRow } from '../components/me/SettingsRow';
+import { ProfileSkeleton } from '../components/skeletons';
 import type { SportType } from '../types/database';
 
 // ─── Local types ──────────────────────────────────────────────────────────────
@@ -178,6 +179,10 @@ export function MePage() {
         </span>
       </div>
     );
+  }
+
+  if (loading) {
+    return <ProfileSkeleton />;
   }
 
   return (

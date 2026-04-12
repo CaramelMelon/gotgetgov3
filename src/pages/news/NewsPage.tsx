@@ -5,6 +5,7 @@ import { useFilters } from '@/contexts/FilterContext';
 import { supabase } from '@/lib/supabase';
 import { sampleFeed as mockFeed } from '@/data/mock';
 import { getInitials } from '@/lib/avatar-utils';
+import { NewsSkeleton } from '@/components/skeletons';
 
 type NewsFilter = 'all' | 'circles' | 'club' | 'competitions';
 
@@ -75,12 +76,17 @@ export function NewsPage() {
   const { user } = useAuth();
   const { newsFilter } = useFilters();
   const [feed, setFeed] = useState<FeedItem[]>(mockFeed as FeedItem[]);
+  const [loading, setLoading] = useState(true);
 
   const activeFilter = (newsFilter as NewsFilter) || 'all';
   const hasClubs = true;
 
   useEffect(() => {
-    if (user) fetchAcceptedConnections();
+    if (user) {
+      fetchAcceptedConnections();
+    }
+    // Simulate initial load
+    setTimeout(() => setLoading(false), 800);
   }, [user]);
 
   const fetchAcceptedConnections = async () => {
@@ -119,6 +125,10 @@ export function NewsPage() {
   };
 
   const filteredFeed = feed.filter((item) => activeFilter === 'all' || item.category === activeFilter);
+
+  if (loading) {
+    return <NewsSkeleton />;
+  }
 
   /* empty state */
   if (!hasClubs) {

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { acceptConnectionRequestApi, rejectConnectionRequestApi } from '@/lib/connectionRequestApi';
 import { confirmResult, disputeResult } from '@/lib/scoring';
 import { getOrCreateDirectConversation } from '@/lib/messaging';
+import { NotificationsSkeleton } from '@/components/skeletons';
 import type { Notification } from '@/types/database';
 import { ACTIVITY_NOTIFICATION_TYPES } from '@/types/database';
 import { InteractiveSwipeNotification } from '@/components/notifications/InteractiveSwipeNotification';
@@ -609,11 +610,7 @@ export function NotificationsPage() {
   }
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-        <div style={{ width: 28, height: 28, border: '3px solid var(--color-bdr)', borderTopColor: 'var(--color-acc)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   return (
