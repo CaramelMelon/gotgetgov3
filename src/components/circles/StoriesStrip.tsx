@@ -99,11 +99,10 @@ export function StoriesStrip({ currentUser, conversations }: StoriesStripProps) 
     <div
       style={{
         display: 'flex',
-        gap: 16,
+        gap: 10,
         overflowX: 'auto',
-        padding: '4px 16px 8px',
+        padding: '8px 12px 6px',
         scrollbarWidth: 'none',
-        // iOS momentum scroll
         WebkitOverflowScrolling: 'touch',
       } as React.CSSProperties}
     >
@@ -143,36 +142,30 @@ function StoryAvatar({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 6,
+        gap: 5,
         flexShrink: 0,
         cursor: 'pointer',
       }}
     >
       {/* Ring wrapper */}
       <div style={{ position: 'relative' }}>
-        {/* Story ring or plain circle */}
         <div
           style={{
-            width: 60,
-            height: 60,
-            borderRadius: 'var(--radius-full)',
-            padding: hasActiveStory ? 2.5 : 0,
-            background: hasActiveStory
-              ? 'var(--color-acc)'
-              : 'transparent',
+            width: 46,
+            height: 46,
+            borderRadius: '50%',
+            padding: hasActiveStory ? 2 : 0,
+            background: hasActiveStory ? 'var(--color-acc)' : 'transparent',
             boxSizing: 'border-box',
           }}
         >
-          {/* Inner white gap for story ring */}
           <div
             style={{
               width: '100%',
               height: '100%',
-              borderRadius: 'var(--radius-full)',
-              padding: hasActiveStory ? 2 : 0,
-              background: hasActiveStory
-                ? 'var(--color-bg)'
-                : 'transparent',
+              borderRadius: '50%',
+              padding: hasActiveStory ? 1.5 : 0,
+              background: hasActiveStory ? 'var(--color-bg)' : 'transparent',
               boxSizing: 'border-box',
             }}
           >
@@ -184,16 +177,15 @@ function StoryAvatar({
           </div>
         </div>
 
-        {/* "+" overlay for current user */}
         {isCurrentUser && (
           <div
             style={{
               position: 'absolute',
               bottom: 0,
               right: 0,
-              width: 18,
-              height: 18,
-              borderRadius: 'var(--radius-full)',
+              width: 15,
+              height: 15,
+              borderRadius: '50%',
               background: 'var(--color-acc)',
               border: '2px solid var(--color-bg)',
               display: 'flex',
@@ -201,30 +193,19 @@ function StoryAvatar({
               justifyContent: 'center',
             }}
           >
-            <span
-              style={{
-                color: '#fff',
-                fontSize: 11,
-                lineHeight: 1,
-                fontWeight: 700,
-                marginTop: -1,
-              }}
-            >
-              +
-            </span>
+            <span style={{ color: '#fff', fontSize: 10, lineHeight: 1, fontWeight: 800 }}>+</span>
           </div>
         )}
 
-        {/* Online dot for other users */}
         {!isCurrentUser && isOnline && (
           <div
             style={{
               position: 'absolute',
               bottom: 1,
               right: 1,
-              width: 10,
-              height: 10,
-              borderRadius: 'var(--radius-full)',
+              width: 9,
+              height: 9,
+              borderRadius: '50%',
               background: 'var(--color-acc)',
               border: '2px solid var(--color-bg)',
             }}
@@ -236,15 +217,15 @@ function StoryAvatar({
       <span
         style={{
           fontFamily: 'var(--font-body)',
-          fontSize: 10,
+          fontSize: 9,
           color: 'var(--color-t2)',
-          fontWeight: 'var(--weight-medium)' as React.CSSProperties['fontWeight'],
-          letterSpacing: '0.02em',
-          maxWidth: 52,
+          fontWeight: 500,
+          maxWidth: 42,
           textAlign: 'center',
           overflow: 'hidden',
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
+          letterSpacing: '0.01em',
         }}
       >
         {truncateName(userName)}

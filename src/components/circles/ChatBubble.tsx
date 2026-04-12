@@ -107,19 +107,21 @@ export function ChatBubble({ msg, showAvatar, participantProfiles = [], onAccept
             style={{
               background: 'var(--color-acc)',
               color: '#fff',
-              borderRadius: `var(--radius-2xl) var(--radius-2xl) var(--radius-sm) var(--radius-2xl)`,
-              padding: '10px 14px',
+              borderRadius: `18px 18px 4px 18px`,
+              padding: '9px 13px',
               maxWidth: '100%',
               wordBreak: 'break-word',
-              opacity: isTemp ? 0.7 : 1,
+              opacity: isTemp ? 0.65 : 1,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
             }}
           >
             <p
               style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
+                fontSize: 13,
                 lineHeight: 1.45,
                 margin: 0,
+                letterSpacing: '-0.01em',
               }}
             >
               {msg.message.content}
@@ -202,20 +204,23 @@ export function ChatBubble({ msg, showAvatar, participantProfiles = [], onAccept
         ) : (
           <div
             style={{
-              background: 'var(--color-surf-2)',
+              background: 'var(--color-surf)',
               color: 'var(--color-t1)',
-              borderRadius: `var(--radius-2xl) var(--radius-2xl) var(--radius-2xl) var(--radius-sm)`,
-              padding: '10px 14px',
+              borderRadius: `18px 18px 18px 4px`,
+              padding: '9px 13px',
               maxWidth: '100%',
               wordBreak: 'break-word',
+              border: '1px solid var(--color-bdr)',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
           >
             <p
               style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
+                fontSize: 13,
                 lineHeight: 1.45,
                 margin: 0,
+                letterSpacing: '-0.01em',
               }}
             >
               {msg.message.content}

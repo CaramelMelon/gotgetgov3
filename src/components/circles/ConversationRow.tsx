@@ -13,7 +13,7 @@ function formatTimestamp(iso: string): string {
   const diffHours = Math.floor(diffMs / 3_600_000);
   const diffDays = Math.floor(diffMs / 86_400_000);
 
-  if (diffMins < 1) return 'Now';
+  if (diffMins < 1) return 'now';
   if (diffMins < 60) return `${diffMins}m`;
   if (diffHours < 24) {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -27,10 +27,10 @@ function formatTimestamp(iso: string): string {
 
 function getPreviewText(content: string | undefined | null): string {
   if (!content) return '';
-  if (content.startsWith(SPORT_CARD_PREFIX)) return '🎾 Training goal';
+  if (content.startsWith(SPORT_CARD_PREFIX)) return 'Training goal shared';
   if (content.startsWith(MATCH_PROPOSAL_PREFIX)) return 'Match proposal';
   if (content.startsWith(ATTACHMENT_PREFIX)) return '📎 Attachment';
-  return content.length > 60 ? content.slice(0, 60) + '…' : content;
+  return content.length > 55 ? content.slice(0, 55) + '…' : content;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -38,38 +38,46 @@ function getPreviewText(content: string | undefined | null): string {
 interface ConversationRowProps {
   item: ConversationItem;
   onClick: (item: ConversationItem) => void;
+  isSelected?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-/**
- * Single row in the Circles conversation list.
- * Follows the "no 1px border" design rule — separation is achieved purely
- * via vertical spacing (margin-bottom) and tonal background shifts.
- */
-export function ConversationRow({ item, onClick }: ConversationRowProps) {
+export function ConversationRow({ item, onClick, isSelected = false }: ConversationRowProps) {
   const timestamp = formatTimestamp(item.lastActivity);
   const preview = getPreviewText(item.lastMessage?.content);
   const hasUnread = item.unreadCount > 0;
+  const [hovered, setHovered] = React.useState(false);
 
   return (
     <button
       onClick={() => onClick(item)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 11,
         width: '100%',
-        padding: '10px 16px',
-        background: 'none',
+        padding: '9px 14px 9px 12px',
+        background: isSelected
+          ? 'var(--color-surf)'
+          : hovered
+          ? 'color-mix(in srgb, var(--color-surf-2) 60%, transparent)'
+          : 'transparent',
         border: 'none',
         cursor: 'pointer',
         textAlign: 'left',
-        // Subtle hover via background — no borders
-        borderRadius: 'var(--radius-xl)',
+        borderRadius: 10,
+        transition: 'background 0.12s',
+        position: 'relative',
+        // Left accent bar for selected state
+        boxShadow: isSelected
+          ? 'inset 3px 0 0 var(--color-acc)'
+          : 'none',
       }}
     >
-      {/* Avatar + online dot */}
+      {/* Avatar + online indicator */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar
           name={item.displayName}
@@ -82,9 +90,9 @@ export function ConversationRow({ item, onClick }: ConversationRowProps) {
               position: 'absolute',
               bottom: 1,
               right: 1,
-              width: 11,
-              height: 11,
-              borderRadius: 'var(--radius-full)',
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
               background: 'var(--color-acc)',
               border: '2px solid var(--color-bg)',
             }}
@@ -94,97 +102,85 @@ export function ConversationRow({ item, onClick }: ConversationRowProps) {
 
       {/* Text content */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Row 1: name + timestamp */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'baseline',
-            marginBottom: 2,
+            marginBottom: 3,
           }}
         >
-          {/* Name */}
           <span
             style={{
               fontFamily: 'var(--font-body)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: hasUnread
-                ? ('var(--weight-bold)' as React.CSSProperties['fontWeight'])
-                : ('var(--weight-semibold)' as React.CSSProperties['fontWeight']),
+              fontSize: 13,
+              fontWeight: hasUnread ? 700 : 600,
               color: 'var(--color-t1)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: '60%',
+              maxWidth: '62%',
+              letterSpacing: '-0.01em',
             }}
           >
             {item.displayName}
           </span>
-
-          {/* Timestamp */}
           <span
             style={{
               fontFamily: 'var(--font-body)',
-              fontSize: 'var(--text-2xs)',
+              fontSize: 10,
               color: hasUnread ? 'var(--color-acc)' : 'var(--color-t3)',
-              fontWeight: hasUnread
-                ? ('var(--weight-semibold)' as React.CSSProperties['fontWeight'])
-                : ('var(--weight-regular)' as React.CSSProperties['fontWeight']),
+              fontWeight: hasUnread ? 600 : 400,
               flexShrink: 0,
-              marginLeft: 8,
+              marginLeft: 6,
+              letterSpacing: '0.01em',
             }}
           >
             {timestamp}
           </span>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          {/* Last message preview */}
+        {/* Row 2: preview + unread badge */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
           <span
             style={{
               fontFamily: 'var(--font-body)',
-              fontSize: 'var(--text-xs)',
-              color: hasUnread ? 'var(--color-t1)' : 'var(--color-t2)',
-              fontWeight: hasUnread
-                ? ('var(--weight-medium)' as React.CSSProperties['fontWeight'])
-                : ('var(--weight-regular)' as React.CSSProperties['fontWeight']),
+              fontSize: 11,
+              color: hasUnread ? 'var(--color-t2)' : 'var(--color-t3)',
+              fontWeight: hasUnread ? 500 : 400,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               flex: 1,
+              lineHeight: 1.3,
             }}
           >
             {preview || 'Start the conversation'}
           </span>
 
-          {/* Unread badge */}
           {hasUnread && (
             <div
               style={{
                 flexShrink: 0,
-                marginLeft: 8,
-                minWidth: 20,
-                height: 20,
-                borderRadius: 'var(--radius-full)',
+                minWidth: 18,
+                height: 18,
+                borderRadius: 9,
                 background: 'var(--color-acc)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0 6px',
+                padding: '0 5px',
               }}
             >
               <span
                 style={{
                   fontFamily: 'var(--font-body)',
-                  fontSize: 10,
-                  fontWeight: 700,
+                  fontSize: 9,
+                  fontWeight: 800,
                   color: '#fff',
                   lineHeight: 1,
+                  letterSpacing: '0.02em',
                 }}
               >
                 {item.unreadCount > 99 ? '99+' : item.unreadCount}

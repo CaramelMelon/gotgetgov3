@@ -14,6 +14,7 @@ interface CirclesViewProps {
   hasMore: boolean;
   loadMore: () => Promise<void>;
   loadingMore: boolean;
+  selectedConversationId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export function CirclesView({
   hasMore,
   loadMore,
   loadingMore,
+  selectedConversationId,
 }: CirclesViewProps) {
   return (
     <div
@@ -48,6 +50,7 @@ export function CirclesView({
         hasMore={hasMore}
         loadMore={loadMore}
         loadingMore={loadingMore}
+        selectedConversationId={selectedConversationId}
       />
     </div>
   );
