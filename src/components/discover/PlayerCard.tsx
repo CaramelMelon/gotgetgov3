@@ -179,6 +179,15 @@ export function PlayerCard({ player, scrollable = false }: PlayerCardProps) {
       {/* ── ABOUT ── */}
       <div style={{ padding: 'var(--space-5) var(--space-5) 0' }}>
         <SectionTitle>About</SectionTitle>
+        {player.bio && (
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)',
+            color: 'var(--color-t2)', lineHeight: 'var(--leading-relaxed)',
+            marginBottom: 'var(--space-4)',
+          }}>
+            {player.bio}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4) var(--space-3)' }}>
           <AboutCell label="Availability"    value={titleCase(player.availability)} />
           <AboutCell label="Preferred Time"  value={titleCase(player.preferredTime)} />

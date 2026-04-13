@@ -21,7 +21,7 @@ export function OpenMatchesSection({
   return (
     <section style={{ marginBottom: 28, marginTop: 4 }}>
       <SectionHeader
-        label="Open Matches Near You"
+        label="Matches Near Me"
         linkText={onSeeAllClick ? "See All" : undefined}
         onLinkClick={onSeeAllClick}
       />

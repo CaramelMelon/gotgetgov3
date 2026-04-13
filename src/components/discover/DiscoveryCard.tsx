@@ -299,7 +299,16 @@ export const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ type, data, onInfo
           >
             {player.mutualConnections !== undefined && player.mutualConnections > 0 && (
               <span style={{ color: 'var(--color-acc)' }}>
-                {player.mutualConnections} mutual {player.mutualConnections === 1 ? 'connection' : 'connections'}
+                {player.mutualConnectionNames && player.mutualConnectionNames.length > 0 ? (
+                  <>
+                    connected with {player.mutualConnectionNames.slice(0, 2).join(', ')}
+                    {player.mutualConnections > 2 && ` +${player.mutualConnections - 2} more`}
+                  </>
+                ) : (
+                  <>
+                    {player.mutualConnections} mutual {player.mutualConnections === 1 ? 'connection' : 'connections'}
+                  </>
+                )}
               </span>
             )}
             {player.responseRate && (

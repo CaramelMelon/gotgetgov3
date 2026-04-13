@@ -18,12 +18,16 @@ import {
   fetchHeroMatch,
   fetchChallenges,
   fetchOpenMatches,
+  fetchOpenAcceptedMatches,
   fetchWeeklyMatches,
   fetchTournaments,
   getCachedData,
   setCachedData,
+  clearFeedCache,
   type FeedData,
 } from '@/api/feed-api';
+import { supabase } from '@/lib/supabase';
+import type { FeedOpenMatch } from '@/types/feed';
 
 // Debounce utility
 function debounce<T extends (...args: any[]) => any>(
@@ -75,7 +79,7 @@ export function FeedPage() {
         await Promise.all([
           filter === 'all' || filter === 'results' ? fetchHeroMatch(user.id) : Promise.resolve(null),
           filter === 'all' || filter === 'challenges' ? fetchChallenges(user.id) : Promise.resolve([]),
-          filter === 'all' || filter === 'near_me' ? fetchOpenMatches(user.id) : Promise.resolve([]),
+          filter === 'all' || filter === 'near_me' ? fetchOpenAcceptedMatches(user.id) : Promise.resolve([]),
           filter === 'all' || filter === 'results' ? fetchWeeklyMatches(user.id) : Promise.resolve([]),
           filter === 'all' || filter === 'tournaments' ? fetchTournaments(user.id) : Promise.resolve([]),
         ]);
@@ -159,9 +163,22 @@ export function FeedPage() {
   };
 
   // Open match actions
-  const handleJoinClick = (openMatch: any) => {
-    console.log('Join match:', openMatch);
-    // TODO: Implement join match dialog
+  const handleJoinClick = async (openMatch: FeedOpenMatch) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('challenge_players')
+      .insert({
+        challenge_id: openMatch.challenge.id,
+        user_id: user.id,
+        team_number: 2,
+        response: 'accepted',
+      });
+    if (error) {
+      console.error('Failed to join match:', error);
+      return;
+    }
+    clearFeedCache();
+    fetchAllFeedData(activeFilter);
   };
 
   // Tournament actions

@@ -21,6 +21,7 @@ import { OnboardingPage } from './pages/onboarding/OnboardingPage';
 import { DiscoverPage } from './pages/discover/DiscoverPage';
 import { NewsPage } from './pages/news/NewsPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
+import { ChallengesPage } from './pages/challenges';
 import { ResultsPage } from './pages/results/ResultsPage';
 import { CirclesPage } from './pages/circles/CirclesPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
@@ -52,6 +53,7 @@ function AppRoutes() {
       <Route path="/discover" element={<GuestRoute><AppShell><DiscoverPage /></AppShell></GuestRoute>} />
       <Route path="/news"     element={<GuestRoute><AppShell><NewsPage /></AppShell></GuestRoute>} />
       <Route path="/schedule" element={<GuestRoute><AppShell><SchedulePage /></AppShell></GuestRoute>} />
+      <Route path="/challenges" element={<GuestRoute><AppShell><ChallengesPage /></AppShell></GuestRoute>} />
       <Route path="/results"  element={<GuestRoute><AppShell><ResultsPage /></AppShell></GuestRoute>} />
       <Route path="/circles"  element={<GuestRoute><AppShell><CirclesPage /></AppShell></GuestRoute>} />
       <Route path="/profile"  element={<GuestRoute><AppShell><ProfilePage /></AppShell></GuestRoute>} />

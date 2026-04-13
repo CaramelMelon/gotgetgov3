@@ -271,62 +271,28 @@ export async function fetchHeroMatch(
 export async function fetchChallenges(
   userId: string
 ): Promise<import('@/types/feed').FeedChallenge[]> {
+  // First get challenge IDs where user is a participant with pending response
+  const { data: userChallenges, error: cpError } = await supabase
+    .from('challenge_players')
+    .select('challenge_id')
+    .eq('user_id', userId)
+    .eq('response', 'pending');
+
+  if (cpError || !userChallenges || userChallenges.length === 0) {
+    return [];
+  }
+
+  const challengeIds = userChallenges.map(cp => cp.challenge_id);
+
+  // Now fetch the full challenge details
   const { data: challenges, error } = await supabase
     .from('challenges')
-    .select('*, proposer:profiles!challenges_proposed_by_fkey(*), challenge_players(user_id, team_number, profiles!challenge_players_user_id_fkey(*)), club:clubs!challenges_club_id_fkey(*)')
-    .eq('challenge_players.user_id', userId)
-    .neq('proposed_by', userId)
+    .select('*, proposer:profiles!challenges_proposed_by_fkey(*), challenge_players(user_id, team_number, response, profiles!challenge_players_user_id_fkey(*)), club:clubs!challenges_club_id_fkey(*)')
+    .in('id', challengeIds)
     .in('status', ['proposed', 'accepted'])
     .order('created_at', { ascending: false });
 
-  // Mock non-expired challenge for UI preview
-  const mockChallenge: import('@/types/feed').FeedChallenge = {
-    challenge: {
-      id: 'mock-challenge-upcoming-001',
-      sport: 'tennis' as any,
-      format: 'singles' as any,
-      status: 'proposed' as any,
-      score_status: null,
-      proposed_by: 'mock-user-marcus',
-      proposed_times: null,
-      confirmed_time: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-      club_id: null,
-      ladder_id: null,
-      court_name: 'Court 1',
-      location: null,
-      message: null,
-      match_id: null,
-      expires_at: null,
-      is_open: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    challenger: {
-      id: 'mock-user-marcus',
-      email: 'marcus@example.com',
-      full_name: 'Marcus Reid',
-      avatar_url: null,
-      bio: '',
-      phone: null,
-      location_lat: null,
-      location_lng: null,
-      location_city: null,
-      location_country: null,
-      home_club_id: null,
-      onboarding_completed: true,
-      dark_mode: false,
-      push_notifications: true,
-      email_notifications: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      last_seen: null,
-    },
-    players: [],
-    isNew: true,
-    distance: 0,
-  };
-
-  if (error || !challenges) return [mockChallenge];
+  if (error || !challenges) return [];
 
   // Get user location for distance calculation
   const { data: userProfile } = await supabase
@@ -335,7 +301,7 @@ export async function fetchChallenges(
     .eq('id', userId)
     .single();
 
-  return [mockChallenge, ...challenges.map((challenge: any) => {
+  return challenges.map((challenge: any) => {
     const distance = userProfile && challenge.club
       ? calculateDistance(
           userProfile.location_lat!,
@@ -358,7 +324,7 @@ export async function fetchChallenges(
       isNew,
       distance,
     };
-  })];
+  });
 }
 
 /**
@@ -404,6 +370,57 @@ export async function fetchOpenMatches(
       distance,
     };
   });
+}
+
+/**
+ * Fetch open matches that have been accepted for display in Feed tab
+ * Returns only challenges where is_open = true AND status = 'accepted'
+ * Includes proposer profile, club data, and player list
+ * 
+ * @param userId - The user ID to fetch open accepted matches for
+ * @returns Array of FeedOpenMatch objects with player data
+ */
+export async function fetchOpenAcceptedMatches(
+  userId: string
+): Promise<FeedOpenMatch[]> {
+  const { data: openMatches } = await supabase
+    .from('challenges')
+    .select(`
+      *,
+      proposer:profiles!challenges_proposed_by_fkey(*),
+      club:clubs!challenges_club_id_fkey(*),
+      challenge_players(
+        user_id,
+        response,
+        profiles!challenge_players_user_id_fkey(*)
+      )
+    `)
+    .eq('is_open', true)
+    .eq('status', 'accepted')
+    .order('confirmed_time', { ascending: true })
+    .limit(10);
+
+  if (!openMatches) return [];
+
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('location_lat, location_lng')
+    .eq('id', userId)
+    .single();
+
+  return openMatches.map((match: any) => ({
+    challenge: match,
+    host: match.proposer,
+    players: match.challenge_players?.map((cp: any) => cp.profiles) || [],
+    distance: userProfile && match.club
+      ? calculateDistance(
+          userProfile.location_lat!,
+          userProfile.location_lng!,
+          match.club.location_lat!,
+          match.club.location_lng!
+        )
+      : 0,
+  }));
 }
 
 /**
