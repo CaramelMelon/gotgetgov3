@@ -44,6 +44,7 @@ export function CreateMatchPage() {
   const [selectedSport, setSelectedSport] = useState<SportType | null>(null);
   const [matchType, setMatchType] = useState<'singles' | 'doubles'>('singles');
   const [postingMode, setPostingMode] = useState<'open' | 'invite'>('open');
+  const [matchVisibility, setMatchVisibility] = useState<'private' | 'open'>('private');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [otherLocation, setOtherLocation] = useState('');
@@ -186,7 +187,7 @@ export function CreateMatchPage() {
           ladder_id: selectedLadder?.id || null,
           message: message || null,
           status: 'proposed',
-          is_open: true,
+          is_open: matchVisibility === 'open',
         }).select().single();
 
         if (error) throw error;
@@ -219,7 +220,7 @@ export function CreateMatchPage() {
           ladder_id: selectedLadder?.id || null,
           message: message || null,
           status: 'proposed',
-          is_open: false,
+          is_open: matchVisibility === 'open',
         }).select().single();
 
         if (error) throw error;
@@ -328,6 +329,24 @@ export function CreateMatchPage() {
             {postingMode === 'open'
               ? 'Your match will appear in the Discover deck for others to join.'
               : 'Send a direct invitation to specific players.'}
+          </p>
+        </div>
+
+        {/* Match Visibility */}
+        <div>
+          <label style={fieldLabel}>Match Visibility *</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setMatchVisibility('private')} style={pill(matchVisibility === 'private')}>
+              Private
+            </button>
+            <button onClick={() => setMatchVisibility('open')} style={pill(matchVisibility === 'open')}>
+              Open
+            </button>
+          </div>
+          <p style={caption}>
+            {matchVisibility === 'private'
+              ? 'Only invited players can see this match in their schedule.'
+              : 'All users can see this match in the schedule tab.'}
           </p>
         </div>
 

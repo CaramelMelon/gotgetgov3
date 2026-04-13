@@ -215,17 +215,88 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
   }
 
   // ── Proposal handlers ────────────────────────────────────────────────────
-  function handleSendProposal(payload: Omit<MatchProposalPayload, 'status' | 'proposedBy'>) {
+  async function handleSendProposal(payload: Omit<MatchProposalPayload, 'status' | 'proposedBy'>) {
+    if (!user) return;
+
+    let challengeId: string | undefined;
+
+    // Create DB challenge so it appears in the CHALLENGES section
+    const { data: challenge, error: challengeError } = await supabase
+      .from('challenges')
+      .insert({
+        proposed_by: user.id,
+        sport: (payload.sport as any) ?? 'tennis',
+        format: 'singles',
+        proposed_times: payload.datetime ? { 0: payload.datetime } : null,
+        status: 'proposed',
+        is_open: payload.visibility === 'open',
+        location: payload.location ?? null,
+      })
+      .select('id')
+      .single();
+
+    if (!challengeError && challenge) {
+      challengeId = challenge.id;
+      // Proposer is accepted, recipient is pending
+      await supabase.from('challenge_players').insert([
+        { challenge_id: challengeId, user_id: user.id, team_number: 1, response: 'accepted' },
+        { challenge_id: challengeId, user_id: otherUserId, team_number: 2, response: 'pending' },
+      ]);
+    } else {
+      console.error('Failed to create challenge record:', challengeError);
+    }
+
     const full: MatchProposalPayload = {
       ...payload,
       status: 'pending',
-      proposedBy: user?.id ?? '',
+      proposedBy: user.id,
+      ...(challengeId && { challengeId }),
     };
     sendMessage(MATCH_PROPOSAL_PREFIX + JSON.stringify(full));
   }
 
-  function handleAcceptProposal(_messageId: string) {
-    sendMessage('✅ Accepted the match proposal!');
+  async function handleAcceptProposal(messageId: string) {
+    sendMessage('Accepted the match proposal!');
+
+    if (!user || !messageId) return;
+
+    const msg = messages.find(m => m.message.id === messageId);
+    if (!msg?.message.content.startsWith(MATCH_PROPOSAL_PREFIX)) return;
+
+    try {
+      const payload: MatchProposalPayload = JSON.parse(
+        msg.message.content.slice(MATCH_PROPOSAL_PREFIX.length)
+      );
+      if (!payload.challengeId) return;
+
+      // Fetch proposed_times to use as confirmed_time
+      const { data: challengeData } = await supabase
+        .from('challenges')
+        .select('proposed_times')
+        .eq('id', payload.challengeId)
+        .single();
+
+      // Extract first time from proposed_times object
+      const firstProposedTime = challengeData?.proposed_times 
+        ? (Object.values(challengeData.proposed_times)[0] as string)
+        : null;
+
+      await supabase
+        .from('challenges')
+        .update({
+          status: 'accepted',
+          confirmed_time: firstProposedTime,
+        })
+        .eq('id', payload.challengeId);
+
+      await supabase
+        .from('challenge_players')
+        .update({ response: 'accepted' })
+        .eq('challenge_id', payload.challengeId)
+        .eq('user_id', user.id);
+    } catch (e) {
+      console.error('Failed to update challenge on accept:', e);
+    }
   }
 
   function handleAltProposal(_messageId: string) {

@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react';
+import { Clock, MapPin, MessageSquare, Globe, Lock } from 'lucide-react';
 import type { FeedChallenge } from '@/types/feed';
 import { getInitials, formatRelativeTime } from '@/lib/feed-utils';
 
@@ -9,9 +9,11 @@ interface ChallengeCardProps {
 
 export function ChallengeCard({ challenge, onRespondClick }: ChallengeCardProps) {
   const { challenger, isNew } = challenge;
-  const { sport, confirmed_time, created_at } = challenge.challenge;
+  const { sport, confirmed_time, created_at, is_open, location, message } = challenge.challenge;
 
-  const sportName = sport.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  const sportName = sport
+    ? sport.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    : 'Match';
   const initials = getInitials(challenger.full_name);
   const eloRating = '1450'; // TODO: Fetch from user_sport_profiles
   const dateTime = confirmed_time || created_at;
@@ -84,6 +86,31 @@ export function ChallengeCard({ challenge, onRespondClick }: ChallengeCardProps)
           >
             {challenger.full_name}
           </h3>
+          {/* Visibility Badge */}
+          <span
+            style={{
+              padding: '2px 7px',
+              borderRadius: 99,
+              background: is_open 
+                ? 'rgba(34,197,94,0.08)' 
+                : 'rgba(148,163,184,0.08)',
+              border: is_open 
+                ? '1px solid rgba(34,197,94,0.25)' 
+                : '1px solid rgba(148,163,184,0.25)',
+              fontSize: 10,
+              fontWeight: 700,
+              color: is_open ? '#16A34A' : '#64748B',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.04em',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
+            {is_open ? <Globe size={9} /> : <Lock size={9} />}
+            {is_open ? 'Open' : 'Private'}
+          </span>
           {isNew && !isExpired && (
             <span
               style={{
@@ -174,6 +201,66 @@ export function ChallengeCard({ challenge, onRespondClick }: ChallengeCardProps)
             </span>
           </div>
         </div>
+
+        {/* Location (if available) */}
+        {location && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 6,
+            }}
+          >
+            <MapPin size={11} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'var(--color-t2)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {location}
+            </span>
+          </div>
+        )}
+
+        {/* Message (if available) */}
+        {message && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 4,
+              marginTop: 6,
+              padding: '6px 8px',
+              background: 'var(--color-surf-2)',
+              borderRadius: '8px',
+              border: '1px solid var(--color-bdr)',
+            }}
+          >
+            <MessageSquare size={11} style={{ color: 'var(--color-t3)', flexShrink: 0, marginTop: 2 }} />
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 12,
+                fontWeight: 400,
+                color: 'var(--color-t2)',
+                lineHeight: 1.4,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {message}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Respond button */}

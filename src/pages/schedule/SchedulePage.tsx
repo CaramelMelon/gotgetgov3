@@ -3,7 +3,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, Clock, MapPin,
-  ChevronLeft, ChevronRight, X, CheckCircle2,
+  ChevronLeft, ChevronRight, X, CheckCircle2, Bell,
 } from 'lucide-react';
 import {
   format, addDays, addWeeks, startOfDay, startOfWeek, isSameDay, isToday as isDateToday,
@@ -20,7 +20,8 @@ import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
 import { getInitials } from '@/lib/avatar-utils';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
-import { calendarService, buildChallengeEvent, buildEventPayload, buildCompetitionPayload, type CalendarEventPayload } from '@/lib/calendar-service';
+import { usePendingChallenges } from '@/hooks/usePendingChallenges';
+import { calendarService, type CalendarEventPayload } from '@/lib/calendar-service';
 
 type ScheduleFilter = 'my' | 'all' | 'club';
 
@@ -39,6 +40,8 @@ interface ScheduleItem {
   sport?: string;
 }
 
+
+
 export function SchedulePage() {
   const navigate = useNavigate();
   const { scheduleFilter } = useFilters();
@@ -54,6 +57,7 @@ export function SchedulePage() {
 
   const activeFilter = (scheduleFilter as ScheduleFilter) || 'my';
   const { connected: calendarConnected, syncCreate, syncDelete } = useCalendarSync();
+  const { count: pendingChallengesCount } = usePendingChallenges();
   const [calendarPromptOpen, setCalendarPromptOpen] = useState(false);
   const [calendarPromptData, setCalendarPromptData] = useState<{
     itemType: 'challenge' | 'event' | 'competition';
@@ -134,7 +138,7 @@ export function SchedulePage() {
           )
         `)
         .eq('user_id', user.id)
-        .in('response', ['accepted', 'pending']),
+        .eq('response', 'accepted'),
     ]);
 
     const joinedItems: ScheduleItem[] = [];
@@ -254,6 +258,8 @@ export function SchedulePage() {
     }
   };
 
+
+
   const handleCancelScheduleItem = async (itemId: string) => {
     if (itemId.startsWith('event-')) {
       const rawId = itemId.replace('event-', '');
@@ -336,21 +342,65 @@ export function SchedulePage() {
           </h1>
         </div>
 
-        {/* Manage Availability button */}
-        <button
-          onClick={() => setAvailabilityModalOpen(true)}
-          style={{
-            width: 42, height: 42,
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-surf)',
-            border: '1px solid var(--color-bdr)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', flexShrink: 0,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          }}
-        >
-          <Clock size={19} style={{ color: 'var(--color-acc)' }} />
-        </button>
+        {/* Action buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {/* Challenges button */}
+          <button
+            onClick={() => navigate('/challenges')}
+            style={{
+              width: 42, height: 42,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-surf)',
+              border: '1px solid var(--color-bdr)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              position: 'relative',
+            }}
+            aria-label={`View challenges${pendingChallengesCount > 0 ? ` (${pendingChallengesCount} pending)` : ''}`}
+          >
+            <Bell size={19} style={{ color: pendingChallengesCount > 0 ? 'var(--color-acc)' : 'var(--color-t2)' }} />
+            {pendingChallengesCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                minWidth: 18,
+                height: 18,
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--color-acc)',
+                color: '#fff',
+                fontSize: 10,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+                border: '2px solid var(--color-bg)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}>
+                {pendingChallengesCount > 9 ? '9+' : pendingChallengesCount}
+              </span>
+            )}
+          </button>
+
+          {/* Manage Availability button */}
+          <button
+            onClick={() => setAvailabilityModalOpen(true)}
+            style={{
+              width: 42, height: 42,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-surf)',
+              border: '1px solid var(--color-bdr)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            }}
+            aria-label="Manage availability"
+          >
+            <Clock size={19} style={{ color: 'var(--color-t2)' }} />
+          </button>
+        </div>
       </div>
 
       {/* ── Calendar Connect Banner ───────────────────────────────────────── */}

@@ -48,14 +48,18 @@ export function SuggestTimeSheet({ open, onClose, onPropose }: Props) {
   const [hour,   setHour]   = useState(9);
   const [minute, setMinute] = useState(0);
   const [location, setLocation] = useState('');
+  const [matchVisibility, setMatchVisibility] = useState<'private' | 'open'>('private');
 
   const selectedDayData = days.find(d => d.iso === selectedDay) ?? days[0];
 
   function handlePropose() {
+    const datetime = `${selectedDay}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
     onPropose({
       date:       selectedDay,
       timeOfDay:  hourToTimeOfDay(hour),
+      datetime,
       location:   location.trim() || undefined,
+      visibility: matchVisibility,
     });
     onClose();
   }
@@ -159,9 +163,61 @@ export function SuggestTimeSheet({ open, onClose, onPropose }: Props) {
                   background: 'var(--color-surf-2)',
                   fontFamily: 'var(--font-body)', fontSize: 14,
                   color: 'var(--color-t1)', outline: 'none',
-                  marginBottom: 28,
+                  marginBottom: 20,
                 }}
               />
+
+              {/* ── MATCH VISIBILITY ────────────────────────────── */}
+              <p style={labelStyle}>Match Visibility</p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
+                <button
+                  onClick={() => setMatchVisibility('private')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    border: matchVisibility === 'private' ? '2px solid var(--color-acc)' : '2px solid var(--color-bdr)',
+                    background: matchVisibility === 'private' ? 'color-mix(in srgb, var(--color-acc) 8%, transparent)' : 'var(--color-surf-2)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: matchVisibility === 'private' ? 'var(--color-acc)' : 'var(--color-t2)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  Private
+                </button>
+                <button
+                  onClick={() => setMatchVisibility('open')}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    border: matchVisibility === 'open' ? '2px solid var(--color-acc)' : '2px solid var(--color-bdr)',
+                    background: matchVisibility === 'open' ? 'color-mix(in srgb, var(--color-acc) 8%, transparent)' : 'var(--color-surf-2)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: matchVisibility === 'open' ? 'var(--color-acc)' : 'var(--color-t2)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  Open
+                </button>
+              </div>
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 12,
+                color: 'var(--color-t3)',
+                margin: '-20px 0 28px',
+                lineHeight: 1.4,
+              }}>
+                {matchVisibility === 'private'
+                  ? 'Only invited players can see this match in their schedule.'
+                  : 'All users can see this match in the schedule tab.'}
+              </p>
             </div>
 
             {/* Footer */}

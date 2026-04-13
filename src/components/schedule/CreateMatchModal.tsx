@@ -59,6 +59,7 @@ export function CreateMatchModal({
   const [selectedSport, setSelectedSport] = useState<SportType | null>(null);
   const [matchType, setMatchType] = useState<'singles' | 'doubles'>('singles');
   const [postingMode, setPostingMode] = useState<'open' | 'invite'>('invite');
+  const [matchVisibility, setMatchVisibility] = useState<'private' | 'open'>('private');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [otherLocation, setOtherLocation] = useState('');
@@ -200,7 +201,7 @@ export function CreateMatchModal({
           ladder_id: selectedLadder?.id || null,
           message: message || null,
           status: 'proposed',
-          is_open: true,
+          is_open: matchVisibility === 'open',
         }).select().single();
 
         if (error) throw error;
@@ -231,7 +232,7 @@ export function CreateMatchModal({
           ladder_id: selectedLadder?.id || null,
           message: message || null,
           status: 'proposed',
-          is_open: false,
+          is_open: matchVisibility === 'open',
         }).select().single();
 
         if (error) throw error;
@@ -381,6 +382,51 @@ export function CreateMatchModal({
                 {postingMode === 'open'
                   ? 'Your match will appear in the Discover deck for others to join.'
                   : 'Send a direct invitation to specific players.'}
+              </p>
+            </div>
+
+            <div>
+              <label
+                className="block text-label font-medium mb-2"
+                style={{ fontFamily: 'var(--font-body)', color: 'var(--color-t1)' }}
+              >
+                Match Visibility *
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMatchVisibility('private')}
+                  className={cn(
+                    'flex-1 py-3 rounded-[8px] text-label font-medium transition-colors'
+                  )}
+                  style={
+                    matchVisibility === 'private'
+                      ? { background: 'var(--color-acc)', color: '#fff' }
+                      : { background: 'var(--color-surf-2)', color: 'var(--color-t2)' }
+                  }
+                >
+                  Private
+                </button>
+                <button
+                  onClick={() => setMatchVisibility('open')}
+                  className={cn(
+                    'flex-1 py-3 rounded-[8px] text-label font-medium transition-colors'
+                  )}
+                  style={
+                    matchVisibility === 'open'
+                      ? { background: 'var(--color-acc)', color: '#fff' }
+                      : { background: 'var(--color-surf-2)', color: 'var(--color-t2)' }
+                  }
+                >
+                  Open
+                </button>
+              </div>
+              <p
+                className="text-caption mt-2"
+                style={{ fontFamily: 'var(--font-body)', color: 'var(--color-t3)' }}
+              >
+                {matchVisibility === 'private'
+                  ? 'Only invited players can see this match in their schedule.'
+                  : 'All users can see this match in the schedule tab.'}
               </p>
             </div>
 
