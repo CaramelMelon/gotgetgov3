@@ -16,6 +16,17 @@ type SportFilter = SportType | 'all';
 type ResultsFilter = 'my' | 'club' | 'all';
 type SubFilter = 'matches' | 'ladders' | 'leagues' | 'tournaments';
 
+interface LadderStanding {
+  position: number;
+  previousPosition: number;
+  player: {
+    name: string;
+    avatarUrl?: string;
+  };
+  matchesWon: number;
+  matchesPlayed: number;
+}
+
 /* ─── tiny helpers ─────────────────────────────────────────────────────── */
 
 function Avatar({ name, avatarUrl, size = 40 }: { name: string; avatarUrl?: string; size?: number }) {
