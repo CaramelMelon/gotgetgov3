@@ -110,3 +110,47 @@ export async function getConnectionStatus(
 
   return 'none';
 }
+
+/**
+ * Gets mutual connection names between current user and target user
+ * 
+ * @param currentUserId - The ID of the current user
+ * @param targetUserId - The ID of the target user
+ * @param limit - Maximum number of names to return (default: 3)
+ * @returns Array of mutual connection names
+ */
+export async function getMutualConnectionNames(
+  currentUserId: string,
+  targetUserId: string,
+  limit: number = 3
+): Promise<string[]> {
+  // Get current user's connections
+  const { data: currentUserConnections } = await supabase
+    .from('connections')
+    .select('connected_user_id')
+    .eq('user_id', currentUserId)
+    .eq('status', 'accepted');
+
+  if (!currentUserConnections || currentUserConnections.length === 0) {
+    return [];
+  }
+
+  const currentUserConnectionIds = currentUserConnections.map(c => c.connected_user_id);
+
+  // Get target user's connections that are also in current user's connections
+  const { data: mutualConnections } = await supabase
+    .from('connections')
+    .select('connected_user_id, profiles!connections_connected_user_id_fkey(full_name)')
+    .eq('user_id', targetUserId)
+    .eq('status', 'accepted')
+    .in('connected_user_id', currentUserConnectionIds)
+    .limit(limit);
+
+  if (!mutualConnections || mutualConnections.length === 0) {
+    return [];
+  }
+
+  return mutualConnections
+    .map(c => (c as any).profiles?.full_name)
+    .filter(Boolean);
+}

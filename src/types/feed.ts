@@ -39,6 +39,7 @@ export interface FeedChallenge {
 export interface FeedOpenMatch {
   challenge: Challenge;
   host: Profile;
+  players?: Profile[];
   distance: number;
 }
 

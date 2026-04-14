@@ -78,10 +78,13 @@ export const SPORT_CARD_PREFIX = '__SPORT_CARD__:';
 export interface MatchProposalPayload {
   date: string;                                            // "2026-03-28"
   timeOfDay: 'morning' | 'afternoon' | 'evening';
+  datetime?: string;                                       // full ISO datetime e.g. "2026-03-28T09:00:00"
   location?: string;
   sport?: string;
   status: 'pending' | 'accepted' | 'declined' | 'counter';
   proposedBy: string;                                      // sender user_id
+  visibility?: 'private' | 'open';                         // match visibility
+  challengeId?: string;                                    // DB challenge record ID (if created)
 }
 
 export const MATCH_PROPOSAL_PREFIX = '__MATCH_PROPOSAL__:';

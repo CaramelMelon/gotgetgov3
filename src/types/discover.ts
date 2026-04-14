@@ -26,6 +26,7 @@ export interface DiscoverPlayer {
   playStyle?: string;
   compatibilityScore: number;
   recentMatches: MatchRecord[];
+  bio?: string;
   // Extended fields used by DiscoveryCard / FullscreenView
   verified?: boolean;
   age?: number | string;
@@ -34,6 +35,7 @@ export interface DiscoverPlayer {
   ratingSystem?: string;
   eloRating?: number;
   mutualConnections?: number;
+  mutualConnectionNames?: string[];
   responseRate?: string;
   clubIds?: string[];
   locationCity?: string;
