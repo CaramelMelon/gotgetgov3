@@ -10,12 +10,6 @@ import { fetchMatchResults, fetchPendingScoreMatches, fetchPendingConfirmations,
 import { supabase } from '@/lib/supabase';
 import { getInitials } from '@/lib/avatar-utils';
 import { ResultsSkeleton } from '@/components/skeletons';
-import {
-  sampleLadderStandings as mockLadderStandings,
-  sampleLeagueStandings as mockLeagueStandings,
-  sampleTournaments as mockTournaments,
-} from '@/data/mock';
-
 // Sport filter pill — "all" means no filter
 type SportFilter = SportType | 'all';
 
@@ -23,16 +17,15 @@ type ResultsFilter = 'my' | 'club' | 'all';
 type SubFilter = 'matches' | 'ladders' | 'leagues' | 'tournaments';
 
 interface LadderStanding {
-  id: string;
   position: number;
   previousPosition: number;
-  player: { name: string; avatarUrl?: string };
-  matchesPlayed: number;
+  player: {
+    name: string;
+    avatarUrl?: string;
+  };
   matchesWon: number;
-  ladderName: string;
+  matchesPlayed: number;
 }
-
-const sampleLadderStandings: LadderStanding[] = mockLadderStandings as LadderStanding[];
 
 /* ─── tiny helpers ─────────────────────────────────────────────────────── */
 
@@ -51,20 +44,6 @@ function Avatar({ name, avatarUrl, size = 40 }: { name: string; avatarUrl?: stri
           </span>
       }
     </div>
-  );
-}
-
-function Chip({ label, color, bg }: { label: string; color: string; bg: string }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center',
-      padding: '2px 8px', borderRadius: 6,
-      fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700,
-      letterSpacing: '0.04em',
-      background: bg, color,
-    }}>
-      {label}
-    </span>
   );
 }
 
@@ -431,15 +410,8 @@ export function ResultsPage() {
 
       {/* ── Ladder Standings ──────────────────────────────────────────────── */}
       {activeSubFilter === 'ladders' && (
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--color-t1)', textAlign: 'center', marginBottom: 14 }}>
-            Ladder Standings
-          </h2>
-          <div style={{ background: 'var(--color-surf)', border: '1px solid var(--color-bdr)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-            {sampleLadderStandings.map((standing) => (
-              <LadderRow key={standing.id} standing={standing} isCurrentUser={standing.player.name === 'Me'} />
-            ))}
-          </div>
+        <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-t3)', fontFamily: 'var(--font-body)', fontSize: 14 }}>
+          No ladder standings yet
         </div>
       )}
 
@@ -685,45 +657,9 @@ function LadderRow({ standing, isCurrentUser }: { standing: LadderStanding; isCu
 /* ─── LeagueStandings ──────────────────────────────────────────────────── */
 
 function LeagueStandings() {
-  const standings = mockLeagueStandings;
   return (
-    <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--color-t1)', textAlign: 'center', marginBottom: 14 }}>
-        League Standings
-      </h2>
-      <div style={{ background: 'var(--color-surf)', border: '1px solid var(--color-bdr)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: 'var(--color-surf-2)' }}>
-                {['#', 'Team', 'P', 'W', 'D', 'L', 'Pts'].map((header, i) => (
-                  <th key={header} style={{
-                    padding: '10px 12px', textAlign: i <= 1 ? 'left' : 'center',
-                    fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 11,
-                    letterSpacing: '0.06em', color: 'var(--color-t3)',
-                    borderBottom: '1px solid var(--color-bdr)',
-                  }}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((row) => (
-                <tr key={row.position} style={{ borderTop: '1px solid var(--color-bdr)' }}>
-                  <td style={{ padding: '10px 12px', fontFamily: 'var(--font-body)', fontWeight: 700, color: 'var(--color-t1)', fontSize: 13 }}>{row.position}</td>
-                  <td style={{ padding: '10px 12px', fontFamily: 'var(--font-body)', color: 'var(--color-t1)', fontSize: 13 }}>{row.team}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--color-t2)', fontSize: 13 }}>{row.played}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--color-t2)', fontSize: 13 }}>{row.won}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--color-t2)', fontSize: 13 }}>{row.drawn}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontFamily: 'var(--font-body)', color: 'var(--color-t2)', fontSize: 13 }}>{row.lost}</td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontFamily: 'var(--font-body)', fontWeight: 700, color: 'var(--color-t1)', fontSize: 13 }}>{row.points}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-t3)', fontFamily: 'var(--font-body)', fontSize: 14 }}>
+      No league standings yet
     </div>
   );
 }
@@ -732,48 +668,8 @@ function LeagueStandings() {
 
 function TournamentResults() {
   return (
-    <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--color-t1)', textAlign: 'center', marginBottom: 14 }}>
-        Tournament Results
-      </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {mockTournaments.map((tournament) => (
-          <div
-            key={tournament.id}
-            style={{
-              padding: '16px', borderRadius: 'var(--radius-xl)',
-              background: 'var(--color-surf)', border: '1px solid var(--color-bdr)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <h3 style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15, color: 'var(--color-t1)', margin: 0 }}>
-                {tournament.name}
-              </h3>
-              <Chip
-                label={tournament.status}
-                color={tournament.status === 'Completed' ? 'var(--color-acc)' : '#FFB300'}
-                bg={tournament.status === 'Completed' ? 'var(--color-acc-bg)' : 'rgba(255,179,0,0.12)'}
-              />
-            </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t2)', margin: '0 0 6px' }}>
-              {tournament.format}
-            </p>
-            {tournament.winner && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Trophy size={16} style={{ color: '#FFB300' }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--color-t1)' }}>
-                  Winner: {tournament.winner}
-                </span>
-              </div>
-            )}
-            {tournament.nextRound && (
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t2)', margin: '4px 0 0' }}>
-                {tournament.nextRound}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
+    <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--color-t3)', fontFamily: 'var(--font-body)', fontSize: 14 }}>
+      No tournament results yet
     </div>
   );
 }

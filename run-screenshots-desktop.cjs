@@ -28,7 +28,7 @@ async function run() {
       if (btn) btn.click();
     });
     await new Promise(r => setTimeout(r, 1000));
-    await page.type('input[type="email"]', 'shubh6@gmail.com');
+    await page.type('input[type="email"]', 'shubh13@gmail.com');
     await page.type('input[type="password"]', 'qwerty');
     await page.keyboard.press('Enter');
     try { await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 5000 }); } catch {}

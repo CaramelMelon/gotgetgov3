@@ -22,10 +22,11 @@ function NotificationItemSkeleton() {
 
 export function NotificationsSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       padding: 'var(--space-5)',
+      paddingBottom: 'var(--page-pb)',
     }}>
       <NotificationItemSkeleton />
       <NotificationItemSkeleton />

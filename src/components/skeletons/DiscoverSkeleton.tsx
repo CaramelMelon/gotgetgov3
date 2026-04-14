@@ -23,11 +23,12 @@ export function DiscoverSkeleton() {
         justifyContent: 'center',
         padding: 'var(--space-5)',
       }}>
-        <Skeleton style={{ 
-          width: '100%', 
-          maxWidth: 400, 
-          height: 500, 
-          borderRadius: 'var(--radius-3xl)' 
+        <Skeleton style={{
+          width: '100%',
+          maxWidth: 400,
+          aspectRatio: '3/4',
+          maxHeight: 'min(500px, calc(100dvh - 260px))',
+          borderRadius: 'var(--radius-3xl)'
         }} />
       </div>
 
