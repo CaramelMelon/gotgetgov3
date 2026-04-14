@@ -279,54 +279,7 @@ export async function fetchChallenges(
     .in('status', ['proposed', 'accepted'])
     .order('created_at', { ascending: false });
 
-  // Mock non-expired challenge for UI preview
-  const mockChallenge: import('@/types/feed').FeedChallenge = {
-    challenge: {
-      id: 'mock-challenge-upcoming-001',
-      sport: 'tennis' as any,
-      format: 'singles' as any,
-      status: 'proposed' as any,
-      score_status: null,
-      proposed_by: 'mock-user-marcus',
-      proposed_times: null,
-      confirmed_time: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-      club_id: null,
-      ladder_id: null,
-      court_name: 'Court 1',
-      location: null,
-      message: null,
-      match_id: null,
-      expires_at: null,
-      is_open: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    challenger: {
-      id: 'mock-user-marcus',
-      email: 'marcus@example.com',
-      full_name: 'Marcus Reid',
-      avatar_url: null,
-      bio: '',
-      phone: null,
-      location_lat: null,
-      location_lng: null,
-      location_city: null,
-      location_country: null,
-      home_club_id: null,
-      onboarding_completed: true,
-      dark_mode: false,
-      push_notifications: true,
-      email_notifications: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      last_seen: null,
-    },
-    players: [],
-    isNew: true,
-    distance: 0,
-  };
-
-  if (error || !challenges) return [mockChallenge];
+  if (error || !challenges) return [];
 
   // Get user location for distance calculation
   const { data: userProfile } = await supabase
@@ -335,7 +288,7 @@ export async function fetchChallenges(
     .eq('id', userId)
     .single();
 
-  return [mockChallenge, ...challenges.map((challenge: any) => {
+  return challenges.map((challenge: any) => {
     const distance = userProfile && challenge.club
       ? calculateDistance(
           userProfile.location_lat!,
@@ -358,7 +311,7 @@ export async function fetchChallenges(
       isNew,
       distance,
     };
-  })];
+  });
 }
 
 /**
@@ -417,18 +370,6 @@ export async function fetchWeeklyMatches(
   userId: string
 ): Promise<import('@/types/feed').FeedDigestMatch[]> {
   type FDM = import('@/types/feed').FeedDigestMatch;
-  const d = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOString();
-  const mockClub = (id: string, name: string, city: string): any => ({ id, name, city, description: null, address: null, state: null, country: 'USA', postal_code: null, location_lat: null, location_lng: null, website: null, phone: null, email: null, avatar_url: null, cover_url: null, sport_types: [], created_at: '', updated_at: '' });
-  const mockOpp = (id: string, name: string, city: string): any => ({ id, email: '', full_name: name, avatar_url: null, bio: '', phone: null, location_lat: null, location_lng: null, location_city: city, location_country: 'USA', home_club_id: null, onboarding_completed: true, dark_mode: false, push_notifications: true, email_notifications: true, created_at: '', updated_at: '', last_seen: null });
-  const mockMatch = (id: string, sport: string, format: string, s1: number, s2: number, winTeam: number, daysAgo: number, clubId: string | null): any => ({ id, sport, format, score: { team1: s1, team2: s2 }, winner_team: winTeam, score_status: 'confirmed', played_at: d(daysAgo), club_id: clubId, ladder_id: null, competition_id: null, competition_fixture_id: null, scheduled_at: null, score_submitted_by: 'mock-user', score_confirmed_by: null, dispute_reason: null, notes: null, created_at: d(daysAgo), updated_at: d(0) });
-
-  const mockMatches: FDM[] = [
-    { match: mockMatch('mm-1','tennis','singles',6,3,1,1,'mc-1'),         opponent: mockOpp('mo-1','Raj Patel','Greenwich'),       club: mockClub('mc-1','Fox Meadow TC','Greenwich'),      isWin: true  },
-    { match: mockMatch('mm-2','platform_tennis','doubles',4,6,2,3,'mc-2'), opponent: mockOpp('mo-2','Daryl Wallace','Scarsdale'),    club: mockClub('mc-2','Scarsdale Paddle Club','Scarsdale'), isWin: false },
-    { match: mockMatch('mm-3','tennis','singles',7,5,1,5,'mc-1'),          opponent: mockOpp('mo-3','Marcus Reid','Greenwich'),      club: mockClub('mc-1','Fox Meadow TC','Greenwich'),      isWin: true  },
-    { match: mockMatch('mm-4','pickleball','singles',9,11,2,8,null),       opponent: mockOpp('mo-4','Priya Sharma','White Plains'),  club: null,                                             isWin: false },
-    { match: mockMatch('mm-5','tennis','doubles',6,2,1,12,'mc-3'),         opponent: mockOpp('mo-5','Tom Harrington','Rye'),         club: mockClub('mc-3','Rye YMCA Tennis','Rye'),          isWin: true  },
-  ];
 
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
@@ -440,7 +381,7 @@ export async function fetchWeeklyMatches(
     .eq('user_id', userId);
 
   if (playerError || !playerRows || playerRows.length === 0) {
-    return mockMatches;
+    return [];
   }
 
   const resultIds = playerRows.map((r) => r.result_id);
@@ -455,7 +396,7 @@ export async function fetchWeeklyMatches(
     .order('played_at', { ascending: false });
 
   if (resultsError || !results || results.length === 0) {
-    return mockMatches;
+    return [];
   }
 
   // Fetch players for these results
@@ -465,7 +406,7 @@ export async function fetchWeeklyMatches(
     .in('result_id', results.map((r) => r.id));
 
   if (playersError || !allPlayers) {
-    return mockMatches;
+    return [];
   }
 
   // Fetch clubs for results that have challenge_id
@@ -540,7 +481,7 @@ export async function fetchWeeklyMatches(
     };
   });
 
-  return [...mockMatches, ...realMatches];
+  return realMatches;
 }
 
 /**

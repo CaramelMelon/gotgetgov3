@@ -27,10 +27,11 @@ function FeedCardSkeleton() {
 
 export function FeedSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       padding: 'var(--space-5)',
+      paddingBottom: 'var(--page-pb)',
     }}>
       <FeedCardSkeleton />
       <FeedCardSkeleton />

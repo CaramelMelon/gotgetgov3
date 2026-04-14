@@ -165,15 +165,15 @@ export function TimeRangePicker({ dayLabel, ranges, onChange }: TimeRangePickerP
 
   return (
     <div style={{
-      padding: '18px 20px',
+      padding: '10px 14px',
       background: 'var(--color-surf)',
       border: '1px solid var(--color-bdr)',
-      borderRadius: 16,
-      marginBottom: 10,
+      borderRadius: 14,
+      marginBottom: 4,
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: ranges.length > 0 || isAdding ? 12 : 0 }}>
-        <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-t1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: ranges.length > 0 || isAdding ? 8 : 0 }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-t1)' }}>
           {dayLabel}
         </span>
         {!isAdding && (
@@ -192,7 +192,7 @@ export function TimeRangePicker({ dayLabel, ranges, onChange }: TimeRangePickerP
       {ranges.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: isAdding ? 12 : 0 }}>
           {ranges.map((range, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px 5px 9px', background: 'var(--color-acc-bg)', border: '1px solid var(--color-acc)', borderRadius: 6, color: 'var(--color-acc)', fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 600 }}>
+            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px 3px 8px', background: 'var(--color-acc-bg)', border: '1px solid var(--color-acc)', borderRadius: 6, color: 'var(--color-acc)', fontFamily: 'var(--font-body)', fontSize: '0.8rem', fontWeight: 600 }}>
               <Clock size={13} style={{ opacity: 0.7 }} />
               <span>{formatTime(range.start)} - {formatTime(range.end)}</span>
               <button type="button" onClick={() => removeRange(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--color-acc)', opacity: 0.6, marginLeft: 2 }}>

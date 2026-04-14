@@ -21,11 +21,17 @@ function NewsCardSkeleton() {
 
 export function NewsSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       padding: 'var(--space-5)',
+      paddingBottom: 'var(--page-pb)',
     }}>
+      {/* Greeting header skeleton */}
+      <div style={{ paddingBottom: 'var(--space-4)' }}>
+        <Skeleton style={{ height: 30, width: 200, marginBottom: 'var(--space-2)' }} />
+        <Skeleton style={{ height: 14, width: 240 }} />
+      </div>
       <NewsCardSkeleton />
       <NewsCardSkeleton />
       <NewsCardSkeleton />

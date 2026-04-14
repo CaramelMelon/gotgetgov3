@@ -312,15 +312,9 @@ interface MatchHistorySectionProps {
 }
 
 function MatchHistorySection({ matchHistory }: MatchHistorySectionProps) {
-  const mockMatches: MatchHistoryItem[] = [
-    { id: '1', opponent: 'John Smith', result: 'win', score: '6-4, 6-3', date: '2 days ago', sport: 'Tennis' },
-    { id: '2', opponent: 'Sarah Johnson', result: 'loss', score: '4-6, 6-7', date: '5 days ago', sport: 'Tennis' },
-    { id: '3', opponent: 'Mike Davis', result: 'win', score: '6-2, 6-4', date: '1 week ago', sport: 'Tennis' },
-    { id: '4', opponent: 'Emma Wilson', result: 'win', score: '7-5, 6-3', date: '2 weeks ago', sport: 'Tennis' },
-    { id: '5', opponent: 'Alex Brown', result: 'loss', score: '3-6, 4-6', date: '3 weeks ago', sport: 'Tennis' },
-  ];
+  if (!matchHistory || matchHistory.length === 0) return null;
 
-  const matches = matchHistory || mockMatches;
+  const matches = matchHistory;
   const wins = matches.filter(m => m.result === 'win').length;
   const losses = matches.filter(m => m.result === 'loss').length;
 
@@ -376,17 +370,9 @@ interface PerformanceGraphSectionProps {
 }
 
 function PerformanceGraphSection({ performanceData, currentRating, sport }: PerformanceGraphSectionProps) {
-  const mockData: PerformanceDataPoint[] = [
-    { date: '6 months ago', rating: 1100 },
-    { date: '5 months ago', rating: 1085 },
-    { date: '4 months ago', rating: 1120 },
-    { date: '3 months ago', rating: 1095 },
-    { date: '2 months ago', rating: 1050 },
-    { date: '1 month ago', rating: 1030 },
-    { date: 'Now', rating: currentRating || 1067 },
-  ];
+  if (!performanceData || performanceData.length === 0) return null;
 
-  const data = performanceData || mockData;
+  const data = performanceData;
   const firstRating = data[0]?.rating || 0;
   const lastRating = data[data.length - 1]?.rating || currentRating || 0;
   const ratingChange = lastRating - firstRating;

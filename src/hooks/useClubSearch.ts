@@ -60,6 +60,7 @@ export function useClubSearch(
         .from('clubs')
         .select('id, name, city, state, logo_url, cover_image_url, location_lat, location_lng')
         .eq('source', 'paddlescores')
+        .order('name', { ascending: true })
         .limit(50)
         .then(({ data, error }: { data: Parameters<typeof toSelectedClub>[0][] | null; error: unknown }) => {
           if (cancelled) return;
@@ -80,6 +81,7 @@ export function useClubSearch(
           .select('id, name, city, state, logo_url, cover_image_url, location_lat, location_lng')
           .ilike('name', `%${trimmed}%`)
           .order('source', { ascending: false }) // paddlescores before user-created
+          .order('name', { ascending: true })
           .limit(20);
 
         // Deduplicate by name (case-insensitive) — keep first occurrence (paddlescores wins)

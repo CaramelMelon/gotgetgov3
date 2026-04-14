@@ -22,10 +22,11 @@ function ResultCardSkeleton() {
 
 export function ResultsSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       padding: 'var(--space-5)',
+      paddingBottom: 'var(--page-pb)',
     }}>
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>

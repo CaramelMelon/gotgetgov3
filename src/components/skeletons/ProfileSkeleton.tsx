@@ -2,10 +2,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function ProfileSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       background: 'var(--color-bg)',
+      paddingBottom: 'var(--page-pb)',
     }}>
       {/* Hero section */}
       <div style={{ 

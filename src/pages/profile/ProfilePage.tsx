@@ -98,6 +98,8 @@ export function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [likedPlayers, setLikedPlayers] = useState<LikedPlayer[]>([]);
   const [likedLoading, setLikedLoading] = useState<boolean>(true);
+  const [userSports, setUserSports] = useState<{ sport: SportType; level: string; rating?: string; ratingSystem?: string }[]>([]);
+  const [stats, setStats] = useState({ matchesPlayed: 0, wins: 0, winRate: 0 });
 
   const shortId = user?.id ? `#${user.id.split('-')[0].toUpperCase()}` : '#--------';
 
@@ -120,6 +122,33 @@ export function ProfilePage() {
     if (!user?.id) return;
     fetchPendingScoreMatches(user.id).then(({ data }) => {
       setPendingScoreCount(data?.length ?? 0);
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    Promise.all([
+      (supabase as any)
+        .from('user_sport_profiles')
+        .select('sport, self_assessed_level, official_rating, official_rating_system')
+        .eq('user_id', user.id),
+      (supabase.rpc as any)('get_player_match_stats', { p_player_id: user.id }).maybeSingle(),
+    ]).then(([sportsRes, statsRes]) => {
+      if (sportsRes.data) {
+        setUserSports(
+          (sportsRes.data as any[]).map((r) => ({
+            sport: r.sport as SportType,
+            level: r.self_assessed_level ?? '',
+            rating: r.official_rating ?? undefined,
+            ratingSystem: r.official_rating_system ?? undefined,
+          }))
+        );
+      }
+      if (statsRes.data) {
+        const played = statsRes.data.matches_played ?? 0;
+        const wins = statsRes.data.wins ?? 0;
+        setStats({ matchesPlayed: played, wins, winRate: played > 0 ? Math.round((wins / played) * 100) : 0 });
+      }
     });
   }, [user?.id]);
 
@@ -173,21 +202,6 @@ export function ProfilePage() {
       setUploading(false);
     }
   };
-
-  // TODO: replace with Supabase fetch (see MePage.tsx for pattern)
-  const userSports: {
-    sport: SportType;
-    level: string;
-    rating?: string;
-    ratingSystem?: string;
-  }[] = [
-    { sport: 'platform_tennis', level: 'Advanced', rating: '4.5', ratingSystem: 'PTI' },
-    { sport: 'tennis', level: 'Intermediate', rating: '5.8', ratingSystem: 'UTR' },
-    { sport: 'pickleball', level: 'Advanced', rating: '4.2', ratingSystem: 'DUPR' },
-  ];
-
-  // TODO: replace with Supabase fetch (see MePage.tsx for pattern)
-  const stats = { matchesPlayed: 47, wins: 32, winRate: 68 };
 
   const location = [profile?.location_city, profile?.location_country]
     .filter(Boolean)

@@ -229,7 +229,7 @@ const S = `
   .ob-skill-card,.ob-skill-card-num,.ob-skill-card-check,
   .ob-skill-card-strip,.ob-skill-card-icon,.ob-skill-card-body,
   .ob-skill-card-rank{display:none}
-  .ob-day-btn{aspect-ratio:1/1;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;border:1px solid var(--color-bdr);background:var(--color-surf);color:var(--color-t2);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .ob-day-btn{padding:5px 0;border-radius:20px;font-family:var(--font-display);font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;border:1px solid var(--color-bdr);background:var(--color-surf);color:var(--color-t2);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .ob-day-btn.active{background:var(--color-acc);border-color:var(--color-acc);color:var(--color-bg);box-shadow:0 2px 10px rgba(22,212,106,0.35);backdrop-filter:none}
   .ob-cta{width:100%;height:48px;border-radius:14px;cursor:pointer;background:var(--color-acc);color:var(--color-bg);font-family:var(--font-display);font-weight:800;font-size:1rem;letter-spacing:0.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;border:none;transition:box-shadow 0.25s,transform 0.15s,opacity 0.3s,filter 0.3s,background 0.2s;box-shadow:0 4px 20px rgba(22,212,106,0.4),0 1px 0 rgba(255,255,255,0.1) inset;position:relative;overflow:hidden}
   .ob-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 50%);pointer-events:none}
@@ -992,7 +992,7 @@ function AvailabilityStep({ data, setData }: StepProps) {
   };
   const selectedDays = [...data.availability].sort((a, b) => a.day - b.day);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
         {days.map((day, index) => {
           const isSelected = data.availability.some(a => a.day === index);
@@ -1005,7 +1005,7 @@ function AvailabilityStep({ data, setData }: StepProps) {
       </div>
       <AnimatePresence mode="popLayout">
         {selectedDays.length > 0 && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {selectedDays.map(entry => (
               <motion.div key={entry.day} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                 <TimeRangePicker dayLabel={fullDays[entry.day]} ranges={entry.ranges} onChange={ranges => setData(prev => ({ ...prev, availability: prev.availability.map(a => a.day === entry.day ? { ...a, ranges } : a) }))} />
@@ -1428,34 +1428,23 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
       )}
 
       {!loading && results.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {results.map(club => {
             const isSelected = data.selectedClubs.some(c => c.id === club.id);
             return (
               <motion.button
                 key={club.id}
-                className="ob-role-row"
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                   background: isSelected ? 'var(--color-acc-bg)' : 'var(--color-surf)',
                   border: `1px solid ${isSelected ? 'var(--color-acc)' : 'var(--color-bdr)'}`,
-                  borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
-                  width: '100%', textAlign: 'left',
+                  borderRadius: 12, padding: '10px 12px', cursor: 'pointer',
+                  width: '100%', textAlign: 'left', position: 'relative',
                 }}
                 onClick={() => toggleClub(club)}
                 animate={isSelected ? { scale: [1, 0.97, 1.01, 1] } : { scale: 1 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
               >
-                <div>
-                  <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.92rem', color: 'var(--color-t1)' }}>
-                    {club.name}
-                  </span>
-                  {(club.city || club.state) && (
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: 'var(--color-t3)', display: 'block', marginTop: 2 }}>
-                      {[club.city, club.state].filter(Boolean).join(', ')}
-                    </span>
-                  )}
-                </div>
                 <AnimatePresence>
                   {isSelected && (
                     <motion.div
@@ -1463,12 +1452,20 @@ function LocationClubStep({ data, setData, user }: CoachStepProps) {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
-                      style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-acc)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                      style={{ position: 'absolute', top: 7, right: 8, width: 18, height: 18, borderRadius: '50%', background: 'var(--color-acc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <Check size={13} color="var(--color-bg)" strokeWidth={3} />
+                      <Check size={10} color="var(--color-bg)" strokeWidth={3} />
                     </motion.div>
                   )}
                 </AnimatePresence>
+                <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-t1)', lineHeight: 1.3, paddingRight: isSelected ? 22 : 0 }}>
+                  {club.name}
+                </span>
+                {(club.city || club.state) && (
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: 'var(--color-t3)', marginTop: 2, lineHeight: 1.2 }}>
+                    {[club.city, club.state].filter(Boolean).join(', ')}
+                  </span>
+                )}
               </motion.button>
             );
           })}

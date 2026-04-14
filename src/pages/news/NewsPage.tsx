@@ -3,7 +3,6 @@ import { Heart, MessageCircle, Share2, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FilterContext';
 import { supabase } from '@/lib/supabase';
-import { sampleFeed as mockFeed } from '@/data/mock';
 import { getInitials } from '@/lib/avatar-utils';
 import { NewsSkeleton } from '@/components/skeletons';
 
@@ -75,7 +74,7 @@ const categoryConfig: Record<string, { label: string; accent: string }> = {
 export function NewsPage() {
   const { user } = useAuth();
   const { newsFilter } = useFilters();
-  const [feed, setFeed] = useState<FeedItem[]>(mockFeed as FeedItem[]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const activeFilter = (newsFilter as NewsFilter) || 'all';

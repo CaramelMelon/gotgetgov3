@@ -22,10 +22,11 @@ function ScheduleItemSkeleton() {
 
 export function ScheduleSkeleton() {
   return (
-    <div style={{ 
-      flex: 1, 
+    <div style={{
+      flex: 1,
       overflowY: 'auto',
       padding: 'var(--space-5)',
+      paddingBottom: 'var(--page-pb)',
     }}>
       {/* Header */}
       <div style={{ marginBottom: 'var(--space-4)' }}>
