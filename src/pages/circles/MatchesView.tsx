@@ -186,6 +186,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
+          overscrollBehavior: 'contain',
         }}
         data-view="matches"
       >
@@ -214,6 +215,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
+            overscrollBehavior: 'contain',
           }}
           data-view="matches"
         >
@@ -244,6 +246,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
+            overscrollBehavior: 'contain',
           }}
           data-view="matches"
         >
@@ -270,6 +273,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
+          overscrollBehavior: 'contain',
         }}
         data-view="matches"
       >
@@ -301,6 +305,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           scrollbarWidth: 'none',
           padding: '0 16px 80px',
           background: 'var(--color-bg)',
+          overscrollBehavior: 'contain',
         }}
         data-view="matches"
       >
@@ -327,6 +332,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          overscrollBehavior: 'contain',
         }}
         data-view="matches"
       >
@@ -345,6 +351,7 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
         scrollbarWidth: 'none',
         padding: '0 16px 80px',
         background: 'var(--color-bg)',
+        overscrollBehavior: 'contain',
       }}
       data-view="matches"
       data-testid="matches-view"
