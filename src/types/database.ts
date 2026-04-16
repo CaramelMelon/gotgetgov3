@@ -691,23 +691,25 @@ export type Database = {
       conversations: {
         Row: {
           id: string;
-          type: 'direct' | 'circle' | 'team' | 'group';
+          type: 'direct' | 'circle' | 'team' | 'group' | 'broadcast';
           circle_id: string | null;
           team_id: string | null;
           name: string | null;
           avatar_url: string | null;
           created_by: string | null;
+          broadcast_recipient_ids: string[] | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          type: 'direct' | 'circle' | 'team' | 'group';
+          type: 'direct' | 'circle' | 'team' | 'group' | 'broadcast';
           circle_id?: string | null;
           team_id?: string | null;
           name?: string | null;
           avatar_url?: string | null;
           created_by?: string | null;
+          broadcast_recipient_ids?: string[] | null;
         };
         Update: Partial<Database['public']['Tables']['conversations']['Insert']>;
         Relationships: [];
@@ -938,6 +940,39 @@ export type Database = {
       };
       update_channel_details: {
         Args: Record<string, unknown>;
+        Returns: void;
+      };
+      create_broadcast_conversation: {
+        Args: {
+          p_name: string;
+          p_creator_id: string;
+          p_recipient_ids: string[];
+          p_avatar_url?: string | null;
+        };
+        Returns: string;
+      };
+      update_broadcast_recipients: {
+        Args: {
+          p_conversation_id: string;
+          p_creator_id: string;
+          p_recipient_ids: string[];
+        };
+        Returns: void;
+      };
+      add_broadcast_recipients: {
+        Args: {
+          p_conversation_id: string;
+          p_creator_id: string;
+          p_new_recipient_ids: string[];
+        };
+        Returns: void;
+      };
+      remove_broadcast_recipients: {
+        Args: {
+          p_conversation_id: string;
+          p_creator_id: string;
+          p_remove_recipient_ids: string[];
+        };
         Returns: void;
       };
     };
