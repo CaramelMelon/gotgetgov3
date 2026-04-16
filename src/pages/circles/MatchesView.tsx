@@ -186,8 +186,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
-          overscrollBehavior: 'contain',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <ErrorState
@@ -215,8 +217,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
-            overscrollBehavior: 'contain',
-          }}
+            overscrollBehavior: 'auto',
+            overscrollBehaviorY: 'auto',
+            touchAction: 'pan-y',
+          } as React.CSSProperties}
           data-view="matches"
         >
           <ErrorState
@@ -246,8 +250,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
-            overscrollBehavior: 'contain',
-          }}
+            overscrollBehavior: 'auto',
+            overscrollBehaviorY: 'auto',
+            touchAction: 'pan-y',
+          } as React.CSSProperties}
           data-view="matches"
         >
           <ErrorState
@@ -273,8 +279,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
-          overscrollBehavior: 'contain',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <ErrorState
@@ -305,8 +313,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           scrollbarWidth: 'none',
           padding: '0 16px 80px',
           background: 'var(--color-bg)',
-          overscrollBehavior: 'contain',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <HeroSectionSkeleton />
@@ -332,8 +342,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          overscrollBehavior: 'contain',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <EmptyMatchesState onFindMatches={() => console.log('Navigate to discover')} />
@@ -351,8 +363,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
         scrollbarWidth: 'none',
         padding: '0 16px 80px',
         background: 'var(--color-bg)',
-        overscrollBehavior: 'contain',
-      }}
+        overscrollBehavior: 'auto',
+        overscrollBehaviorY: 'auto',
+        touchAction: 'pan-y',
+      } as React.CSSProperties}
       data-view="matches"
       data-testid="matches-view"
     >

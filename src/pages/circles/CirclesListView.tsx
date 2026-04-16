@@ -311,7 +311,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
           paddingBottom: 8,
           paddingLeft: 4,
           paddingRight: 4,
-          overscrollBehavior: 'contain',
+          overscrollBehavior: 'auto',
         } as React.CSSProperties}
       >
         {/* ── Broadcast tab UI ─────────────────────────────────────────── */}

@@ -61,6 +61,7 @@ const EMMA_RAW_CONVERSATION: Conversation = {
   name: null,
   avatar_url: null,
   created_by: EMMA_USER_ID,
+  broadcast_recipient_ids: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
