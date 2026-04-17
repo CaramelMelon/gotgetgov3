@@ -151,7 +151,7 @@ export function CirclesPage() {
     ? 'CIRCLES'
     : viewParam === 'matches'
     ? 'MATCHES'
-    : 'MATCHES';
+    : 'CIRCLES';
 
   const [screen, setScreen] = useState<CirclesScreen>({ view: 'list' });
   const _realConvs = useConversations();
@@ -716,7 +716,7 @@ export function CirclesPage() {
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden',
+                    minHeight: 0,
                     willChange: 'transform, opacity',
                   }}
                 >
@@ -741,7 +741,7 @@ export function CirclesPage() {
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden',
+                    minHeight: 0,
                     willChange: 'transform, opacity',
                   }}
                 >

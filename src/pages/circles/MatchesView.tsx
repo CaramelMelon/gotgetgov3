@@ -373,7 +373,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <ErrorState
@@ -401,7 +404,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
-          }}
+            overscrollBehavior: 'auto',
+            overscrollBehaviorY: 'auto',
+            touchAction: 'pan-y',
+          } as React.CSSProperties}
           data-view="matches"
         >
           <ErrorState
@@ -431,7 +437,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
             WebkitOverflowScrolling: 'touch',
             padding: '16px 16px 80px',
             background: 'var(--color-bg)',
-          }}
+            overscrollBehavior: 'auto',
+            overscrollBehaviorY: 'auto',
+            touchAction: 'pan-y',
+          } as React.CSSProperties}
           data-view="matches"
         >
           <ErrorState
@@ -457,7 +466,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           WebkitOverflowScrolling: 'touch',
           padding: '16px 16px 80px',
           background: 'var(--color-bg)',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <ErrorState
@@ -488,7 +500,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           scrollbarWidth: 'none',
           padding: '0 16px 80px',
           background: 'var(--color-bg)',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <HeroSectionSkeleton />
@@ -514,7 +529,10 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-        }}
+          overscrollBehavior: 'auto',
+          overscrollBehaviorY: 'auto',
+          touchAction: 'pan-y',
+        } as React.CSSProperties}
         data-view="matches"
       >
         <EmptyMatchesState onFindMatches={() => console.log('Navigate to discover')} />
@@ -523,51 +541,51 @@ export const MatchesView = forwardRef<HTMLDivElement, MatchesViewProps>(
   }
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      <div
-        ref={scrollContainerRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
-          scrollbarWidth: 'none',
-          padding: '0 16px 80px',
-          background: 'var(--color-bg)',
-        }}
-        data-view="matches"
-        data-testid="matches-view"
-      >
-        {error && (feedData.heroMatch || feedData.challenges.length > 0 ||
-                   feedData.openMatches.length > 0 || feedData.weeklyMatches.length > 0 ||
-                   feedData.tournaments.length > 0) && (
-          <NetworkErrorBanner
-            message={
-              error.message === 'NETWORK_TIMEOUT'
-                ? 'Request timed out. Showing cached data. Tap to retry.'
-                : error.message === 'INVALID_DATA_FORMAT'
-                ? 'Received invalid data. Showing cached data. Tap to retry.'
-                : 'Connection error. Showing cached data. Tap to retry.'
-            }
-            onRetry={onRefresh}
-          />
-        )}
+    <div
+      ref={scrollContainerRef}
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        padding: '0 16px 80px',
+        background: 'var(--color-bg)',
+        overscrollBehavior: 'auto',
+        overscrollBehaviorY: 'auto',
+        touchAction: 'pan-y',
+      } as React.CSSProperties}
+      data-view="matches"
+      data-testid="matches-view"
+    >
+      {/* Error banner if there's an error but we have cached data */}
+      {error && (feedData.heroMatch || feedData.challenges.length > 0 || 
+                 feedData.openMatches.length > 0 || feedData.weeklyMatches.length > 0 || 
+                 feedData.tournaments.length > 0) && (
+        <NetworkErrorBanner
+          message={
+            error.message === 'NETWORK_TIMEOUT' 
+              ? 'Request timed out. Showing cached data. Tap to retry.'
+              : error.message === 'INVALID_DATA_FORMAT'
+              ? 'Received invalid data. Showing cached data. Tap to retry.'
+              : 'Connection error. Showing cached data. Tap to retry.'
+          }
+          onRetry={onRefresh}
+        />
+      )}
 
-        <HeroSection
-          heroMatch={feedData.heroMatch}
-          onShareClick={handleShareClick}
-          onOptionsClick={handleOptionsClick}
+      <HeroSection
+        heroMatch={feedData.heroMatch}
+        onShareClick={handleShareClick}
+        onOptionsClick={handleOptionsClick}
         />
-        <ChallengesSection challenges={feedData.challenges} onRespondClick={handleRespondClick} />
-        <OpenMatchesSection
-          openMatches={feedData.openMatches.filter((m) => !joinedIds.has(m.challenge.id))}
-          onJoinClick={handleJoinClick}
-        />
-        <DigestSection matches={feedData.weeklyMatches} />
-        <TournamentsSection tournaments={feedData.tournaments} onEnterClick={handleEnterClick} />
-        <style>{`[data-view="matches"]::-webkit-scrollbar{display:none}`}</style>
-      </div>
+      <ChallengesSection challenges={feedData.challenges} onRespondClick={handleRespondClick} />
+      <OpenMatchesSection
+        openMatches={feedData.openMatches.filter((m) => !joinedIds.has(m.challenge.id))}
+        onJoinClick={handleJoinClick}
+      />
+      <DigestSection matches={feedData.weeklyMatches} />
+      <TournamentsSection tournaments={feedData.tournaments} onEnterClick={handleEnterClick} />
+      <style>{`[data-view="matches"]::-webkit-scrollbar{display:none}`}</style>
 
       {joinModalMatch && createPortal(
         <AnimatePresence>

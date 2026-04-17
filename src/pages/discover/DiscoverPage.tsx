@@ -403,8 +403,10 @@ export function DiscoverPage() {
               inline
               onPass={() => topPlayer && handleSwipeLeft(topPlayer.id)}
               onConnect={() => topPlayer && handleSwipeRight(topPlayer.id)}
+              onUndo={handleUndo}
               onShuffle={handleShuffle}
               onFavorite={handleFavorite}
+              canUndo={!!lastSwipe}
               isFavorited={!!topPlayer && favoriteIds.has(topPlayer.id)}
               disabled={!topPlayer}
             />
@@ -444,8 +446,10 @@ export function DiscoverPage() {
           <InteractionBar
             onPass={() => topPlayer && handleSwipeLeft(topPlayer.id)}
             onConnect={() => topPlayer && handleSwipeRight(topPlayer.id)}
+            onUndo={handleUndo}
             onShuffle={handleShuffle}
             onFavorite={handleFavorite}
+            canUndo={!!lastSwipe}
             isFavorited={!!topPlayer && favoriteIds.has(topPlayer.id)}
             disabled={!topPlayer}
           />
