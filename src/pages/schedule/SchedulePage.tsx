@@ -3,7 +3,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, Clock, MapPin,
-  ChevronLeft, ChevronRight, X, CheckCircle2, Bell,
+  ChevronLeft, ChevronRight, X, CheckCircle2,
 } from 'lucide-react';
 import {
   format, addDays, addWeeks, startOfDay, startOfWeek, isSameDay, isToday as isDateToday,
@@ -16,11 +16,12 @@ import { CalendarBanner, CalendarPromptModal } from '@/components/schedule';
 import { ScheduleSkeleton } from '@/components/skeletons';
 import { useFilters } from '@/contexts/FilterContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMockMode } from '@/contexts/MockModeContext';
+import { MOCK_SCHEDULE } from '@/data/mockDemoData';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
 import { getInitials } from '@/lib/avatar-utils';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
-import { usePendingChallenges } from '@/hooks/usePendingChallenges';
 import { calendarService, type CalendarEventPayload } from '@/lib/calendar-service';
 
 type ScheduleFilter = 'my' | 'all' | 'club';
@@ -46,6 +47,7 @@ export function SchedulePage() {
   const navigate = useNavigate();
   const { scheduleFilter } = useFilters();
   const { user, isGuest, profile } = useAuth();
+  const isMockMode = useMockMode();
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
@@ -57,7 +59,6 @@ export function SchedulePage() {
 
   const activeFilter = (scheduleFilter as ScheduleFilter) || 'my';
   const { connected: calendarConnected, syncCreate, syncDelete } = useCalendarSync();
-  const { count: pendingChallengesCount } = usePendingChallenges();
   const [calendarPromptOpen, setCalendarPromptOpen] = useState(false);
   const [calendarPromptData, setCalendarPromptData] = useState<{
     itemType: 'challenge' | 'event' | 'competition';
@@ -68,12 +69,37 @@ export function SchedulePage() {
   const [calendarBannerKey, setCalendarBannerKey] = useState(0);
 
   useEffect(() => {
+    if (isMockMode) {
+      const now = new Date();
+      const shift = (n: number) => { const d = new Date(now); d.setDate(d.getDate() + n); return d; };
+      const resolveDate = (label: string): Date => {
+        if (label === 'Today') return now;
+        if (label === 'Tomorrow') return shift(1);
+        if (label.startsWith('Days+')) return shift(parseInt(label.slice(5)));
+        if (label.startsWith('Past-')) return shift(-parseInt(label.slice(5)));
+        return shift(7);
+      };
+      setSchedule(MOCK_SCHEDULE.map((e) => ({
+        id: e.id,
+        type: 'match' as const,
+        title: e.opponent !== 'Open Match' ? `vs ${e.opponent}` : e.opponent,
+        date: resolveDate(e.dateLabel),
+        time: e.time,
+        location: e.location,
+        opponent: e.opponent !== 'Open Match' ? { name: e.opponent } : undefined,
+        status: e.status === 'open' ? 'tentative' as const : e.status as 'confirmed' | 'pending',
+        sport: e.sport,
+        category: 'my' as const,
+      })));
+      setLoadingSchedule(false);
+      return;
+    }
     if (user) {
       fetchJoinedItems();
     } else if (isGuest) {
       setLoadingSchedule(false);
     }
-  }, [user, isGuest]);
+  }, [user, isGuest, isMockMode]);
 
   const fetchJoinedItems = async () => {
     if (!user) return;
@@ -344,46 +370,6 @@ export function SchedulePage() {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          {/* Challenges button */}
-          <button
-            onClick={() => navigate('/challenges')}
-            style={{
-              width: 42, height: 42,
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--color-surf)',
-              border: '1px solid var(--color-bdr)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-              position: 'relative',
-            }}
-            aria-label={`View challenges${pendingChallengesCount > 0 ? ` (${pendingChallengesCount} pending)` : ''}`}
-          >
-            <Bell size={19} style={{ color: pendingChallengesCount > 0 ? 'var(--color-acc)' : 'var(--color-t2)' }} />
-            {pendingChallengesCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                minWidth: 18,
-                height: 18,
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--color-acc)',
-                color: '#fff',
-                fontSize: 10,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 5px',
-                border: '2px solid var(--color-bg)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              }}>
-                {pendingChallengesCount > 9 ? '9+' : pendingChallengesCount}
-              </span>
-            )}
-          </button>
-
           {/* Manage Availability button */}
           <button
             onClick={() => setAvailabilityModalOpen(true)}
@@ -688,152 +674,66 @@ function AgendaCard({ item, onPlayerClick }: {
   item: ScheduleItem;
   onPlayerClick?: (playerId: string) => void;
 }) {
-  const typeLabels: Record<string, string> = {
-    match: 'Match', event: 'Event', coaching: 'Coaching',
-    fixture: 'League', competition: 'Competition',
-  };
+  const statusColor = item.status === 'confirmed' ? 'var(--color-acc)' : item.status === 'pending' ? '#FFB300' : 'var(--color-t3)';
+
+  const opponentName = item.opponent?.name ?? null;
 
   return (
     <div style={{
       background: 'var(--color-surf)', borderRadius: 'var(--radius-xl)',
-      padding: 'var(--space-4)', display: 'flex', alignItems: 'stretch',
-      gap: 'var(--space-3)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+      padding: '14px 16px', display: 'flex', alignItems: 'center',
+      gap: 14, boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
     }}>
       {/* Date column */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', minWidth: 40, gap: 2,
-      }}>
-        <span style={{
-          fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)',
-          fontWeight: 800, color: 'var(--color-acc)', lineHeight: 1,
-        }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 40, gap: 1 }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--color-acc)', lineHeight: 1 }}>
           {item.date.getDate()}
         </span>
-        <span style={{
-          fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 700,
-          color: 'var(--color-t3)', textTransform: 'uppercase', letterSpacing: '0.06em',
-        }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 700, color: 'var(--color-t3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {format(item.date, 'EEE')}
         </span>
+        {item.time && (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600, color: 'var(--color-t2)', marginTop: 3, whiteSpace: 'nowrap' }}>
+            {item.time}
+          </span>
+        )}
       </div>
 
-      {/* Vertical divider */}
-      <div style={{ width: 1, background: 'var(--color-bdr)', flexShrink: 0 }} />
+      <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-bdr)', flexShrink: 0 }} />
 
       {/* Content */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <h3 style={{
-          fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)',
-          fontWeight: 700, color: 'var(--color-t1)', lineHeight: 1.2,
-          margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {item.title}
-          {item.opponent && (
-            <span style={{ fontWeight: 400, color: 'var(--color-t2)' }}>
-              {' '}with{' '}
-              {item.opponent.id && onPlayerClick ? (
-                <button
-                  onClick={() => onPlayerClick(item.opponent!.id!)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-display)', fontWeight: 600,
-                    fontSize: 'inherit', color: 'var(--color-acc)', padding: 0,
-                  }}
-                >
-                  {item.opponent.name}
-                </button>
-              ) : (
-                item.opponent.name
-              )}
-            </span>
-          )}
-        </h3>
-
-        {(item.location || item.time) && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            fontFamily: 'var(--font-body)', fontSize: 'var(--text-xs)', color: 'var(--color-t2)',
-          }}>
-            {item.location && <MapPin size={12} style={{ flexShrink: 0 }} />}
-            {item.location && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.location}</span>}
-            {item.location && item.time && <span style={{ color: 'var(--color-t3)' }}>·</span>}
-            {item.time && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <Clock size={12} />
-                {item.time}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          {opponentName && (
+            item.opponent?.id && onPlayerClick ? (
+              <button
+                onClick={() => onPlayerClick(item.opponent!.id!)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--color-t1)' }}
+              >
+                {opponentName}
+              </button>
+            ) : (
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--color-t1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {opponentName}
               </span>
-            )}
-          </div>
-        )}
+            )
+          )}
+          {!opponentName && (
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--color-t2)' }}>
+              Open Match
+            </span>
+          )}
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor, flexShrink: 0, marginLeft: 2 }} />
+        </div>
 
-        {/* Participant row */}
-        {item.opponent?.avatarUrl && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: '50%', overflow: 'hidden',
-              background: 'var(--color-surf-2)', flexShrink: 0,
-            }}>
-              <img src={item.opponent.avatarUrl} alt={item.opponent.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t2)' }}>
-              {item.opponent.name}
-            </span>
-          </div>
-        )}
-
-        {/* Badges */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
-          <span style={{
-            fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            padding: '2px 8px', borderRadius: 'var(--radius-full)',
-            background: 'color-mix(in srgb, var(--color-acc) 12%, transparent)',
-            color: 'var(--color-acc)',
-          }}>
-            {typeLabels[item.type]}
-          </span>
-          {item.sport && (
-            <span style={{
-              fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              padding: '2px 8px', borderRadius: 'var(--radius-full)',
-              background: 'var(--color-surf-2)', color: 'var(--color-t2)',
-            }}>
-              {item.sport}
-            </span>
-          )}
-          {item.status === 'confirmed' && (
-            <span style={{
-              fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              padding: '2px 8px', borderRadius: 'var(--radius-full)',
-              background: 'color-mix(in srgb, var(--color-acc) 12%, transparent)',
-              color: 'var(--color-acc)',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <CheckCircle2 size={10} />
-              Confirmed
-            </span>
-          )}
-          {item.status === 'pending' && (
-            <span style={{
-              fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              padding: '2px 8px', borderRadius: 'var(--radius-full)',
-              background: 'color-mix(in srgb, #FFB300 12%, transparent)',
-              color: '#FFB300',
-            }}>
-              Pending
-            </span>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t2)', flexWrap: 'wrap' }}>
+          {item.sport && <span style={{ fontWeight: 600, color: 'var(--color-t2)' }}>{item.sport}</span>}
+          {item.sport && item.location && <span style={{ color: 'var(--color-bdr)' }}>·</span>}
+          {item.location && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.location}</span>}
         </div>
       </div>
 
-      {/* Right chevron */}
-      <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-t3)', flexShrink: 0 }}>
-        <ChevronRight size={16} />
-      </div>
+      <ChevronRight size={15} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
     </div>
   );
 }

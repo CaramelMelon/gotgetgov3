@@ -705,6 +705,7 @@ const mockConv = (id: string, type: 'direct' | 'group' | 'circle', name: string 
   name,
   avatar_url: null,
   created_by: 'mock-me',
+  broadcast_recipient_ids: null,
   created_at: pastDate(20),
   updated_at: new Date().toISOString(),
 });

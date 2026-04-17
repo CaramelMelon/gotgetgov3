@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FilterContext';
+import { useMockMode } from '@/contexts/MockModeContext';
+import { MOCK_ME } from '@/data/mockDemoData';
 import { supabase } from '@/lib/supabase';
 import { getInitials } from '@/lib/avatar-utils';
 import { NewsSkeleton } from '@/components/skeletons';
@@ -14,6 +16,7 @@ interface FeedItem {
   title?: string;
   content?: string;
   imageUrl?: string;
+  gradientBg?: string;
   author: { id: string; name: string; avatarUrl?: string };
   audienceLabel?: string;
   metadata?: {
@@ -74,19 +77,150 @@ const categoryConfig: Record<string, { label: string; accent: string }> = {
 export function NewsPage() {
   const { user } = useAuth();
   const { newsFilter } = useFilters();
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isMockMode = useMockMode();
+  const [feed, setFeed] = useState<FeedItem[]>(() => {
+    if (!isMockMode) return [];
+    const ago = (h: number) => new Date(Date.now() - h * 3600000).toISOString();
+    const me = { id: 'mock-me', name: MOCK_ME.fullName };
+    const alex = { id: 'mock-p2', name: 'Alex Chen' };
+    const marco = { id: 'mock-p6', name: 'Marco Rossi' };
+    const jake = { id: 'mock-p4', name: 'Jake Williams' };
+
+    const IMG = {
+      tennis1:    '/images/tennis1.jpg',
+      tennis2:    '/images/tennis2.jpg',
+      tennisCt:   '/images/tennisCt.jpg',
+      padel:      '/images/padel.jpg',
+      pickleball: '/images/pickleball.jpg',
+      squash:     '/images/squash.jpg',
+      trophy:     '/images/trophy.jpg',
+      stadium:    '/images/stadium.jpg',
+      handshake:  '/images/handshake.jpg',
+      clay:       '/images/clay.jpg',
+    };
+
+    const G = {
+      tennis:  'linear-gradient(150deg, #0d2b1a 0%, #1b5e3b 60%, #276749 100%)',
+      padel:   'linear-gradient(150deg, #051937 0%, #0a3d7a 60%, #1565c0 100%)',
+      pickle:  'linear-gradient(150deg, #3b0764 0%, #6b21a8 60%, #9333ea 100%)',
+      squash:  'linear-gradient(150deg, #1c0a00 0%, #7c2d12 60%, #c2410c 100%)',
+      ladder:  'linear-gradient(150deg, #1a0a00 0%, #92400e 60%, #d97706 100%)',
+      event:   'linear-gradient(150deg, #042f2e 0%, #115e59 60%, #0d9488 100%)',
+      achieve: 'linear-gradient(150deg, #1a1400 0%, #854d0e 60%, #ca8a04 100%)',
+      social:  'linear-gradient(150deg, #0f172a 0%, #1e3a5f 60%, #1e40af 100%)',
+    };
+
+    return [
+      {
+        id: 'mf-1', type: 'match_result' as const,
+        imageUrl: IMG.tennis1, gradientBg: G.tennis,
+        author: me,
+        metadata: { winner: MOCK_ME.fullName, loser: 'Sara Johnson', score: '6–3, 6–4' },
+        audienceLabel: 'Tennis · City Tennis Club',
+        reactions: { like: 14, celebrate: 6, fire: 3 }, comments: 4,
+        createdAt: ago(2), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-2', type: 'ladder_movement' as const,
+        imageUrl: IMG.stadium, gradientBg: G.ladder,
+        author: me,
+        title: 'Climbing the ranks',
+        metadata: { winner: MOCK_ME.fullName, positionChange: 3 },
+        audienceLabel: 'Brooklyn Tennis Ladder · Now #8',
+        reactions: { like: 21, celebrate: 9, fire: 5 }, comments: 6,
+        createdAt: ago(5), category: 'competitions' as NewsFilter,
+      },
+      {
+        id: 'mf-3', type: 'event' as const,
+        imageUrl: IMG.tennisCt, gradientBg: G.event,
+        author: { id: 'club-1', name: 'City Tennis Club' },
+        title: 'Brooklyn Summer Open 2026',
+        content: 'Open singles & doubles draw. Limited spots — register before Apr 25.',
+        metadata: { eventName: 'Brooklyn Summer Open', eventDate: 'May 10–12, 2026' },
+        audienceLabel: 'City Tennis Club · Members',
+        reactions: { like: 38, celebrate: 17, fire: 9 }, comments: 12,
+        createdAt: ago(8), category: 'club' as NewsFilter,
+      },
+      {
+        id: 'mf-4', type: 'match_result' as const,
+        imageUrl: IMG.padel, gradientBg: G.padel,
+        author: me,
+        metadata: { winner: `${MOCK_ME.fullName} & Sofia M.`, loser: 'Lucia F. & Ana P.', score: '6–2, 6–4' },
+        audienceLabel: 'Padel Doubles · Padel Pro Club',
+        reactions: { like: 11, celebrate: 4, fire: 2 }, comments: 3,
+        createdAt: ago(18), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-5', type: 'achievement' as const,
+        imageUrl: IMG.trophy, gradientBg: G.achieve,
+        author: me,
+        title: '10 Matches Milestone',
+        metadata: { achievement: '10 ranked matches completed — ELO now 1247' },
+        audienceLabel: 'GotGet Achievement',
+        reactions: { like: 29, celebrate: 14, fire: 7 }, comments: 8,
+        createdAt: ago(26), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-6', type: 'match_result' as const,
+        imageUrl: IMG.squash, gradientBg: G.squash,
+        author: marco,
+        metadata: { winner: 'Marco Rossi', loser: MOCK_ME.fullName, score: '3–1' },
+        audienceLabel: 'Squash Singles · Downtown Squash',
+        reactions: { like: 7, celebrate: 2, fire: 1 }, comments: 2,
+        createdAt: ago(36), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-7', type: 'connection_accepted' as const,
+        imageUrl: IMG.handshake, gradientBg: G.social,
+        author: me,
+        metadata: { connectedUser: { id: 'mock-p2', name: 'Alex Chen' } },
+        audienceLabel: 'New connection',
+        reactions: { like: 8, celebrate: 3, fire: 1 }, comments: 1,
+        createdAt: ago(42), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-8', type: 'announcement' as const,
+        imageUrl: IMG.clay, gradientBg: G.event,
+        author: { id: 'club-1', name: 'City Tennis Club' },
+        title: '4 New Clay Courts Now Open',
+        content: 'Book online through the app. Free for members during the first week.',
+        audienceLabel: 'City Tennis Club · All Members',
+        reactions: { like: 52, celebrate: 23, fire: 11 }, comments: 18,
+        createdAt: ago(50), category: 'club' as NewsFilter,
+      },
+      {
+        id: 'mf-9', type: 'match_result' as const,
+        imageUrl: IMG.pickleball, gradientBg: G.pickle,
+        author: jake,
+        metadata: { winner: 'Jake Williams', loser: MOCK_ME.fullName, score: '11–5, 11–7' },
+        audienceLabel: 'Pickleball Doubles · Sports Hub NYC',
+        reactions: { like: 9, celebrate: 3, fire: 2 }, comments: 2,
+        createdAt: ago(60), category: 'circles' as NewsFilter,
+      },
+      {
+        id: 'mf-10', type: 'match_result' as const,
+        imageUrl: IMG.tennis2, gradientBg: G.tennis,
+        author: alex,
+        metadata: { winner: 'Alex Chen', loser: 'Priya Patel', score: '7–5, 6–3' },
+        audienceLabel: 'Tennis Singles · Riverside TC',
+        reactions: { like: 16, celebrate: 7, fire: 3 }, comments: 5,
+        createdAt: ago(72), category: 'circles' as NewsFilter,
+      },
+    ];
+  });
+  const [loading, setLoading] = useState(!isMockMode);
 
   const activeFilter = (newsFilter as NewsFilter) || 'all';
   const hasClubs = true;
 
   useEffect(() => {
+    if (isMockMode) return;
     if (user) {
       fetchAcceptedConnections();
     }
     // Simulate initial load
     setTimeout(() => setLoading(false), 800);
-  }, [user]);
+  }, [user, isMockMode]);
 
   const fetchAcceptedConnections = async () => {
     if (!user) return;
@@ -192,7 +326,7 @@ function FeedCard({ item }: { item: FeedItem }) {
   const [liked, setLiked] = useState(false);
   const config = categoryConfig[item.type] || { label: 'Update', accent: 'var(--color-bdr-s)' };
 
-  const hasImage = !!item.imageUrl;
+  const hasImage = !!(item.imageUrl || item.gradientBg);
 
   const headline = (() => {
     if (item.type === 'match_result' && item.metadata)
@@ -227,11 +361,18 @@ function FeedCard({ item }: { item: FeedItem }) {
       padding: hasImage ? 0 : '16px 18px',
       boxShadow: hasImage ? '0 6px 28px rgba(0,0,0,0.35)' : '0 4px 12px rgba(0,0,0,0.03)',
     }}>
-      {/* Background & Overlays (ONLY if image) */}
+      {/* Background & Overlays (ONLY if image or gradient) */}
       {hasImage && (
         <>
-          <img src={item.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.1) 100%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: item.gradientBg ?? '#111' }} />
+          {item.imageUrl && (
+            <img
+              src={item.imageUrl}
+              alt=""
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.08) 100%)', pointerEvents: 'none' }} />
         </>
       )}
 

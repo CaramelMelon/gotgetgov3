@@ -10,7 +10,7 @@ export interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { theme, setTheme, toggle } = useTheme({ followSystem: true });
+  const { theme, setTheme, toggle } = useTheme({ followSystem: false });
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggle }}>

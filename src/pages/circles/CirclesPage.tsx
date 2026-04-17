@@ -31,6 +31,8 @@ import {
   clearFeedCache,
 } from '../../api/feed-api';
 import { logError } from '../../lib/error-logging';
+import { IS_MOCK } from '../../contexts/MockModeContext';
+import { MOCK_HERO_MATCH, MOCK_FEED_CHALLENGES, MOCK_FEED_OPEN_MATCHES, MOCK_CONVERSATIONS } from '../../data/mockDemoData';
 
 // ─── Framer Motion transition variants ───────────────────────────────────────
 // Ease curves: [0.32, 0, 0.67, 0] = ease-in-cubic (fast exit)
@@ -152,7 +154,18 @@ export function CirclesPage() {
     : 'CIRCLES';
 
   const [screen, setScreen] = useState<CirclesScreen>({ view: 'list' });
-  const { conversations, loading, error, markAsRead, refetch, hasMore, loadMore, loadingMore } = useConversations();
+  const _realConvs = useConversations();
+  const [mockConvs, setMockConvs] = useState(MOCK_CONVERSATIONS);
+  const conversations = IS_MOCK ? mockConvs : _realConvs.conversations;
+  const loading = IS_MOCK ? false : _realConvs.loading;
+  const error = IS_MOCK ? null : _realConvs.error;
+  const markAsRead = IS_MOCK
+    ? async (id: string) => { setMockConvs(prev => prev.map(c => c.conversation.id === id ? { ...c, unreadCount: 0 } : c)); }
+    : _realConvs.markAsRead;
+  const refetch = IS_MOCK ? async () => {} : _realConvs.refetch;
+  const hasMore = IS_MOCK ? false : _realConvs.hasMore;
+  const loadMore = IS_MOCK ? async () => {} : _realConvs.loadMore;
+  const loadingMore = IS_MOCK ? false : _realConvs.loadingMore;
   const { user, isGuest } = useAuth();
   const { tutorialStep, advanceTutorial } = useGuestTutorial();
   const { setHideNav } = useNavVisibility();
@@ -173,13 +186,11 @@ export function CirclesPage() {
       setHideNav(false);
     }
   }, [viewParam, targetConversationId, setHideNav]);
-  const [feedData, setFeedData] = useState<FeedData>({
-    heroMatch: null,
-    challenges: [],
-    openMatches: [],
-    weeklyMatches: [],
-    tournaments: [],
-  });
+  const [feedData, setFeedData] = useState<FeedData>(() =>
+    IS_MOCK
+      ? { heroMatch: MOCK_HERO_MATCH, challenges: MOCK_FEED_CHALLENGES, openMatches: MOCK_FEED_OPEN_MATCHES, weeklyMatches: [], tournaments: [] }
+      : { heroMatch: null, challenges: [], openMatches: [], weeklyMatches: [], tournaments: [] }
+  );
   const [feedLoading, setFeedLoading] = useState<boolean>(false);
   const [feedError, setFeedError] = useState<Error | null>(null);
   const [scrollPositions, setScrollPositions] = useState<{ MATCHES: number; CIRCLES: number }>({
@@ -381,6 +392,8 @@ export function CirclesPage() {
     if (activeSegment !== 'MATCHES') {
       return;
     }
+
+    if (IS_MOCK) return;
 
     if (!user) {
       // User is not authenticated - show appropriate state

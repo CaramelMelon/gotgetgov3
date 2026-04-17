@@ -4,6 +4,7 @@ import { Heart, MessageCircle } from 'lucide-react';
 import type { Notification } from '@/types/database';
 import type { SwipeRightNotificationData } from '@/types/swipeNotifications';
 import { acceptConnectionFromNotification, rejectConnectionFromNotification } from '@/lib/notifications';
+import { useMockMode } from '@/contexts/MockModeContext';
 import { supabase } from '@/lib/supabase';
 
 interface InteractiveSwipeNotificationProps {
@@ -57,9 +58,11 @@ export function InteractiveSwipeNotification({
     fetchSwiperProfile();
   }, [data.senderName, data.swiper_id]);
 
+  const isMockMode = useMockMode();
   const isUnread = !notification.read;
 
   const handleAccept = async () => {
+    if (isMockMode) { setConnectionState('accepted'); onAccepted(); return; }
     setLoading('accept');
     setError(null);
     const result = await acceptConnectionFromNotification(notification.id, currentUserId);
@@ -84,6 +87,7 @@ export function InteractiveSwipeNotification({
   };
 
   const handleReject = async () => {
+    if (isMockMode) { setConnectionState('rejected'); onRejected(notification.id); return; }
     setLoading('reject');
     setError(null);
     const result = await rejectConnectionFromNotification(notification.id, currentUserId);
