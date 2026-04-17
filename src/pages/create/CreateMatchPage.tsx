@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Plus, Calendar, Clock, Search, Globe, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMockMode } from '@/contexts/MockModeContext';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
 import { SPORT_FORMAT_CONFIG } from '@/lib/scoring';
@@ -36,6 +37,7 @@ export function CreateMatchPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const isMockMode = useMockMode();
 
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
@@ -78,6 +80,29 @@ export function CreateMatchPage() {
   }, [selectedSport]);
 
   const fetchUserData = async () => {
+    // In mock mode, provide mock sports and connections
+    if (isMockMode) {
+      const mockSports: SportType[] = ['tennis', 'padel'];
+      setUserSports(mockSports);
+      setSelectedSport(mockSports[0]);
+      
+      const mockClubs = [
+        { id: 'club-1', name: 'City Tennis Club' },
+        { id: 'club-2', name: 'Padel Pro Club' },
+      ];
+      setClubs(mockClubs);
+      setSelectedClub(mockClubs[0]);
+      
+      const mockPlayers = [
+        { id: 'mock-p1', name: 'Sara Johnson', avatarUrl: '/images/avatars/sara.jpg' },
+        { id: 'mock-p2', name: 'Alex Chen', avatarUrl: '/images/avatars/alex.jpg' },
+        { id: 'mock-p3', name: 'Sofia Martinez', avatarUrl: '/images/avatars/sofia.jpg' },
+        { id: 'mock-p5', name: 'Priya Patel', avatarUrl: '/images/avatars/priya.jpg' },
+      ];
+      setAvailablePlayers(mockPlayers);
+      return;
+    }
+
     const [sportsRes, clubsRes, connectionsRes] = await Promise.all([
       supabase.from('user_sport_profiles').select('sport').eq('user_id', user!.id),
       supabase.from('user_clubs').select('club_id, clubs(id, name)').eq('user_id', user!.id),
@@ -174,6 +199,17 @@ export function CreateMatchPage() {
     setIsSubmitting(true);
 
     try {
+      // In mock mode, just navigate without database operations
+      if (isMockMode) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+        if (postingMode === 'open') {
+          navigate('/discover');
+        } else {
+          navigate('/circles');
+        }
+        return;
+      }
+
       const proposedTimes = timeSlots.map((slot) => `${slot.date} ${slot.time}`);
 
       if (postingMode === 'open') {

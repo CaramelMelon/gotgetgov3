@@ -41,6 +41,7 @@ export interface FeedOpenMatch {
   host: Profile;
   players?: Profile[];
   distance: number;
+  hostElo?: number;
 }
 
 /**
