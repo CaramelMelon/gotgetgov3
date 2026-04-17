@@ -7,6 +7,8 @@ import {
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuestTutorial } from '@/contexts/GuestTutorialContext';
+import { useMockMode } from '@/contexts/MockModeContext';
+import { MOCK_NOTIFICATIONS } from '@/data/mockDemoData';
 import { supabase } from '@/lib/supabase';
 import { acceptConnectionRequestApi, rejectConnectionRequestApi } from '@/lib/connectionRequestApi';
 import { confirmResult, disputeResult } from '@/lib/scoring';
@@ -506,9 +508,10 @@ function TutorialConnectionCard() {
 export function NotificationsPage() {
   const { user, isGuest } = useAuth();
   const { tutorialStep, advanceTutorial } = useGuestTutorial();
+  const isMockMode = useMockMode();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(!isGuest);
+  const [notifications, setNotifications] = useState<Notification[]>(() => isMockMode ? MOCK_NOTIFICATIONS : []);
+  const [loading, setLoading] = useState(!isGuest && !isMockMode);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [tab, setTab] = useState<FilterTab>('all');
 
@@ -520,7 +523,7 @@ export function NotificationsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (isMockMode || !user?.id) return;
     fetchNotifications();
     const timer = setTimeout(() => markAllRead(), 1500);
     const channel: RealtimeChannel = supabase
@@ -549,6 +552,7 @@ export function NotificationsPage() {
   }
 
   async function handleAccept(notification: Notification) {
+    if (isMockMode) { setNotifications((prev) => prev.filter((n) => n.id !== notification.id)); return; }
     const requestId = notification.data.requestId as string;
     setActionLoading(notification.id);
     const result = await acceptConnectionRequestApi(requestId, user!.id);
@@ -557,6 +561,7 @@ export function NotificationsPage() {
   }
 
   async function handleReject(notification: Notification) {
+    if (isMockMode) { setNotifications((prev) => prev.filter((n) => n.id !== notification.id)); return; }
     const requestId = notification.data.requestId as string;
     setActionLoading(notification.id);
     const result = await rejectConnectionRequestApi(requestId, user!.id);

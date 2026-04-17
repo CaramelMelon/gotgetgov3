@@ -13,6 +13,8 @@ import { useMessages } from '../../hooks/useMessages';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { EMMA_CONV_ID } from '../../data/emmaDemoProfile';
+import { IS_MOCK, useMockMode } from '../../contexts/MockModeContext';
+import { MOCK_MESSAGES, MOCK_AUTH_PROFILE } from '../../data/mockDemoData';
 import type { ConversationItem, MessageWithSender, MatchProposalPayload, AttachmentPayload } from '../../types/circles';
 import { MATCH_PROPOSAL_PREFIX, ATTACHMENT_PREFIX } from '../../types/circles';
 import { uploadAttachment } from '../../lib/attachments';
@@ -85,20 +87,34 @@ interface ChatDetailViewProps {
 
 export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackButton = false }: ChatDetailViewProps) {
   const isDemo = conversationItem.conversation.id === EMMA_CONV_ID;
+  const isMockConv = IS_MOCK && conversationItem.conversation.id.startsWith('conv-');
   const { tutorialStep, tutorialMessages, addUserMessage, advanceTutorial } = useGuestTutorial();
   const navigate = useNavigate();
 
-  // For demo chat: pass null to skip Supabase calls; useMessages handles null safely
+  // For demo/mock chat: pass null to skip Supabase calls
   const {
     messages: realMessages,
     loading,
     error,
     sendMessage: realSendMessage,
     sending: realSending,
-  } = useMessages(isDemo ? null : conversationItem.conversation.id);
+  } = useMessages(isDemo || isMockConv ? null : conversationItem.conversation.id);
 
-  const messages = isDemo ? tutorialMessages : realMessages;
-  const sending = isDemo ? false : realSending;
+  const rawMockMsgs = isMockConv ? (MOCK_MESSAGES[conversationItem.conversation.id] ?? []) : [];
+  const [mockMsgs, setMockMsgs] = useState<typeof rawMockMsgs>(rawMockMsgs);
+
+  const mockMessagesWithSender: MessageWithSender[] = mockMsgs.map(m => ({
+    message: m,
+    sender: m.sender_id === 'mock-me'
+      ? MOCK_AUTH_PROFILE
+      : conversationItem.otherParticipants.find(p => p.profile.id === m.sender_id)?.profile
+        ?? conversationItem.otherParticipants[0]?.profile
+        ?? MOCK_AUTH_PROFILE,
+    isMine: m.sender_id === 'mock-me',
+  }));
+
+  const messages = isDemo ? tutorialMessages : isMockConv ? mockMessagesWithSender : realMessages;
+  const sending = isDemo || isMockConv ? false : realSending;
 
   const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -138,9 +154,9 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
     return () => clearInterval(t);
   }, []);
 
-  const online = isDemo ? true : isOnlineNow(otherLastSeen);
+  const online = (isDemo || isMockConv) ? true : isOnlineNow(otherLastSeen);
 
-  // Mark messages as read when entering the chat (skip for demo)
+  // Mark messages as read when entering the chat
   useEffect(() => {
     if (!isDemo) markAsRead(conversationItem.conversation.id);
   }, [conversationItem.conversation.id, markAsRead, isDemo]);
@@ -148,23 +164,35 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
   // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Also mark as read when new messages arrive (skip for demo)
+  // Also mark as read when new messages arrive (skip for demo/mock)
   useEffect(() => {
-    if (!isDemo && messages.length > 0) {
+    if (!isDemo && !isMockConv && messages.length > 0) {
       markAsRead(conversationItem.conversation.id);
     }
-  }, [messages.length, conversationItem.conversation.id, markAsRead, isDemo]);
+  }, [messages.length, conversationItem.conversation.id, markAsRead, isDemo, isMockConv]);
 
-  // ── Send (real or demo) ──────────────────────────────────────────────────
+  // ── Send (real, demo, or mock) ───────────────────────────────────────────
   async function sendMessage(content: string, attachment?: PendingAttachment) {
     setUploadError(null);
+
+    if (isMockConv) {
+      if (!content.trim()) return;
+      const newMsg = {
+        id: `mock-sent-${Date.now()}`,
+        conversation_id: conversationItem.conversation.id,
+        sender_id: 'mock-me',
+        content: content.trim(),
+        encrypted_content: null,
+        expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      setMockMsgs(prev => [...prev, newMsg]);
+      return;
+    }
 
     if (isDemo) {
       if (attachment) {

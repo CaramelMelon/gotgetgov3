@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -5,6 +6,7 @@ import { GuestTutorialProvider } from './contexts/GuestTutorialContext';
 import { TutorialSpotlight } from './components/tutorial/TutorialSpotlight';
 import { FilterProvider } from './contexts/FilterContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
+import { MockModeProvider, IS_MOCK } from './contexts/MockModeContext';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
 import { PublicRoute } from './components/routing/PublicRoute';
@@ -39,6 +41,26 @@ import {
   EditCirclePage,
 } from './pages/create';
 
+function MockEntry() {
+  useEffect(() => {
+    sessionStorage.setItem('gg-mock', 'true');
+    window.location.replace('/discover');
+  }, []);
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'var(--color-bg)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '50%',
+        border: '3px solid var(--color-acc)', borderTopColor: 'transparent',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+    </div>
+  );
+}
+
+
 function AppRoutes() {
   return (
     <Routes>
@@ -69,6 +91,9 @@ function AppRoutes() {
       <Route path="/announcement/new"    element={<ProtectedRoute><CreateAnnouncementPage /></ProtectedRoute>} />
       <Route path="/:type/:id/edit"      element={<ProtectedRoute><EditCirclePage /></ProtectedRoute>} />
 
+      {/* Mock demo entry — sets flag then reloads to /discover */}
+      <Route path="/mock" element={<MockEntry />} />
+
       {/* Fallbacks */}
       <Route path="/" element={<Navigate to="/discover" replace />} />
       <Route path="*" element={<Navigate to="/discover" replace />} />
@@ -80,16 +105,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <GuestTutorialProvider>
-            <FilterProvider>
-              <FullscreenProvider>
-                <AppRoutes />
-                <TutorialSpotlight />
-              </FullscreenProvider>
-            </FilterProvider>
-          </GuestTutorialProvider>
-        </AuthProvider>
+        <MockModeProvider>
+          <AuthProvider>
+            <GuestTutorialProvider>
+              <FilterProvider>
+                <FullscreenProvider>
+                  <AppRoutes />
+                  <TutorialSpotlight />
+                </FullscreenProvider>
+              </FilterProvider>
+            </GuestTutorialProvider>
+          </AuthProvider>
+        </MockModeProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

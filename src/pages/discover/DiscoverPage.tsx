@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 import { supabase } from '../../lib/supabase';
 import { haversineKm } from '../../lib/haversine';
 import { eloMatchScore, getLevelElo } from '../../lib/elo';
@@ -11,6 +12,7 @@ import { InteractionBar } from '../../components/discover/InteractionBar';
 import { SwipeDeck } from '../../components/discover/SwipeDeck';
 import { DiscoverSkeleton } from '../../components/skeletons';
 import { EMMA_DISCOVER_PLAYER, EMMA_USER_ID } from '../../data/emmaDemoProfile';
+import { MOCK_PLAYERS } from '../../data/mockDemoData';
 import type { DiscoverPlayer, FilterSport, FilterSkill, MatchRecord } from '../../types/discover';
 import type { SportType } from '../../types/index';
 
@@ -60,6 +62,7 @@ const TEN_MINUTES = 10 * 60 * 1000;
 export function DiscoverPage() {
   const { user, profile, isGuest } = useAuth();
   const { tutorialStep, advanceTutorial, registerTarget, resetTutorial } = useGuestTutorial();
+  const isMockMode = useMockMode();
   const isDesktop = useIsDesktop();
   const deckRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<FilterTriptychHandle>(null);
@@ -82,6 +85,11 @@ export function DiscoverPage() {
   const [matchCache, setMatchCache] = useState<Record<string, MatchRecord[]>>({});
 
   const fetchPlayers = useCallback(async () => {
+    if (isMockMode) {
+      setPlayers(MOCK_PLAYERS);
+      setLoading(false);
+      return;
+    }
     if (!user || !profile) return;
     setLoading(true);
 
@@ -219,28 +227,30 @@ export function DiscoverPage() {
       advanceTutorial('go_to_notifications');
       return;
     }
-    const player = players.find(p => p.id === id);
-    if (!player || !user) return;
     setSwipedIds(prev => new Set([...prev, id]));
     setLastSwipe({ id, direction: 'right' });
     setTriggerSwipe({ id, direction: 'right' });
     setTimeout(() => setTriggerSwipe(null), 400);
+    if (isMockMode) return;
+    const player = players.find(p => p.id === id);
+    if (!player || !user) return;
     await (supabase.from('swipe_matches') as any).upsert({
       user_id: user.id, target_user_id: id, sport: player.sport, direction: 'right',
     }, { onConflict: 'user_id,target_user_id,sport' });
-  }, [players, user, advanceTutorial]);
+  }, [players, user, advanceTutorial, isMockMode]);
 
   const handleSwipeLeft = useCallback(async (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (!player || !user) return;
     setSwipedIds(prev => new Set([...prev, id]));
     setLastSwipe({ id, direction: 'left' });
     setTriggerSwipe({ id, direction: 'left' });
     setTimeout(() => setTriggerSwipe(null), 400);
+    if (isMockMode) return;
+    const player = players.find(p => p.id === id);
+    if (!player || !user) return;
     await (supabase.from('swipe_matches') as any).upsert({
       user_id: user.id, target_user_id: id, sport: player.sport, direction: 'left',
     }, { onConflict: 'user_id,target_user_id,sport' });
-  }, [players, user]);
+  }, [players, user, isMockMode]);
 
   const handleUndo = useCallback(async () => {
     if (!lastSwipe || !user) return;

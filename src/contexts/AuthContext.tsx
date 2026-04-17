@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../types/database';
+import { IS_MOCK } from './MockModeContext';
+import { MOCK_AUTH_USER, MOCK_AUTH_PROFILE } from '../data/mockDemoData';
 
 interface AuthContextType {
   user: User | null;
@@ -25,16 +27,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export { AuthContext };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<User | null>(() => IS_MOCK ? MOCK_AUTH_USER : null);
+  const [profile, setProfile] = useState<Profile | null>(() => IS_MOCK ? MOCK_AUTH_PROFILE : null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!IS_MOCK);
   const [isGuest, setIsGuest] = useState<boolean>(() =>
     localStorage.getItem('gg-guest') === 'true'
   );
   const [guestSwipeCount, setGuestSwipeCount] = useState(0);
 
   useEffect(() => {
+    if (IS_MOCK) return;
+
     // Track whether we've already bootstrapped to avoid firing twice:
     // getSession() fires first, then onAuthStateChange('INITIAL_SESSION') also fires.
     // We only need to fetch the profile and update last_seen ONCE on startup.
@@ -87,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Heartbeat: keep last_seen fresh every 2 minutes while logged in
   useEffect(() => {
-    if (!user) return;
+    if (!user || IS_MOCK) return;
     const tick = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('profiles') as any)
