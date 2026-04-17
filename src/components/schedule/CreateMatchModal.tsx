@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/avatar-utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMockMode } from '@/contexts/MockModeContext';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export function CreateMatchModal({
   onSuccess,
 }: CreateMatchModalProps) {
   const { user } = useAuth();
+  const isMockMode = useMockMode();
 
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
@@ -92,6 +94,29 @@ export function CreateMatchModal({
   }, [selectedSport]);
 
   const fetchUserData = async () => {
+    // In mock mode, provide mock sports and connections
+    if (isMockMode) {
+      const mockSports: SportType[] = ['tennis', 'padel'];
+      setUserSports(mockSports);
+      setSelectedSport(mockSports[0]);
+      
+      const mockClubs = [
+        { id: 'club-1', name: 'City Tennis Club' },
+        { id: 'club-2', name: 'Padel Pro Club' },
+      ];
+      setClubs(mockClubs);
+      setSelectedClub(mockClubs[0]);
+      
+      const mockPlayers = [
+        { id: 'mock-p1', name: 'Sara Johnson', avatarUrl: '/images/avatars/sara.jpg' },
+        { id: 'mock-p2', name: 'Alex Chen', avatarUrl: '/images/avatars/alex.jpg' },
+        { id: 'mock-p3', name: 'Sofia Martinez', avatarUrl: '/images/avatars/sofia.jpg' },
+        { id: 'mock-p5', name: 'Priya Patel', avatarUrl: '/images/avatars/priya.jpg' },
+      ];
+      setAvailablePlayers(mockPlayers);
+      return;
+    }
+
     const [sportsRes, clubsRes, connectionsRes] = await Promise.all([
       supabase.from('user_sport_profiles').select('sport').eq('user_id', user!.id),
       supabase.from('user_clubs').select('club_id, clubs(id, name)').eq('user_id', user!.id),
@@ -188,6 +213,14 @@ export function CreateMatchModal({
     setIsSubmitting(true);
 
     try {
+      // In mock mode, just close the modal without database operations
+      if (isMockMode) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+        onClose();
+        onSuccess?.();
+        return;
+      }
+
       const proposedTimes = timeSlots.map((slot) => `${slot.date} ${slot.time}`);
 
       if (postingMode === 'open') {
