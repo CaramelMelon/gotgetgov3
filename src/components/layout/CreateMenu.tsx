@@ -1,6 +1,7 @@
 import { X, Swords, CalendarPlus, Trophy, Users, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { useState } from 'react';
 
 interface CreateMenuProps {
   isOpen: boolean;
@@ -10,10 +11,10 @@ interface CreateMenuProps {
 
 export type CreateMenuItemId = 'match' | 'event' | 'competition' | 'circle' | 'announcement';
 
-const menuItems: { id: CreateMenuItemId; label: string; description: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
+const menuItems: { id: CreateMenuItemId; label: string; description: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; comingSoon?: boolean }[] = [
   { id: 'match',        label: 'Match',             description: 'Request a match with a player',        icon: Swords },
-  { id: 'event',        label: 'Event',             description: 'Create an open play or meetup',         icon: CalendarPlus },
-  { id: 'competition',  label: 'Competition',       description: 'Start a league, tournament, or ladder', icon: Trophy },
+  { id: 'event',        label: 'Event',             description: 'Create an open play or meetup',         icon: CalendarPlus, comingSoon: true },
+  { id: 'competition',  label: 'Competition',       description: 'Start a league, tournament, or ladder', icon: Trophy, comingSoon: true },
   { id: 'circle',       label: 'Circle / Team',     description: 'Create a group or doubles pair',        icon: Users },
   { id: 'announcement', label: 'Announcement',      description: 'Post to your club or circle',           icon: Megaphone },
 ];
@@ -119,7 +120,9 @@ export function CreateMenu({ isOpen, onClose, onSelect }: CreateMenuProps) {
 }
 
 function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
   const Icon = item.icon;
+  
   return (
     <button
       onClick={onClick}
@@ -129,9 +132,16 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
         padding: '12px 8px', borderRadius: 12,
         background: 'none', border: 'none', cursor: 'pointer',
         transition: 'background 0.12s',
+        position: 'relative',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surf-2)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'var(--color-surf-2)';
+        setIsHovered(true);
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'none';
+        setIsHovered(false);
+      }}
     >
       <div style={{
         width: 40, height: 40, borderRadius: '50%',
@@ -141,7 +151,7 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
       }}>
         <span style={{ color: 'var(--color-acc)', display: 'flex' }}><Icon size={18} strokeWidth={2} /></span>
       </div>
-      <div>
+      <div style={{ flex: 1, paddingRight: item.comingSoon ? 100 : 0 }}>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-t1)', marginBottom: 2 }}>
           {item.label}
         </p>
@@ -149,6 +159,46 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
           {item.description}
         </p>
       </div>
+      {item.comingSoon && (
+        <div 
+          className="lg:hidden"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: 12,
+            transform: 'translateY(-50%)',
+            padding: '4px 10px',
+            borderRadius: 6,
+            background: 'var(--color-acc)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'white',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+          Coming Soon
+        </div>
+      )}
+      {item.comingSoon && isHovered && (
+        <div 
+          className="hidden lg:block"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: 12,
+            transform: 'translateY(-50%)',
+            padding: '4px 10px',
+            borderRadius: 6,
+            background: 'var(--color-acc)',
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'white',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+          Coming Soon
+        </div>
+      )}
     </button>
   );
 }
