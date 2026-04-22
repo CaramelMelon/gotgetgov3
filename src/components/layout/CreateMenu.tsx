@@ -126,16 +126,18 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
   return (
     <button
       onClick={onClick}
+      disabled={item.comingSoon}
       className={cn('w-full text-left transition-colors duration-100')}
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
         padding: '12px 8px', borderRadius: 12,
-        background: 'none', border: 'none', cursor: item.comingSoon ? 'default' : 'pointer',
+        background: 'none', border: 'none', cursor: item.comingSoon ? 'not-allowed' : 'pointer',
         transition: 'background 0.12s',
         position: 'relative',
+        opacity: item.comingSoon ? 0.55 : 1,
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.background = 'var(--color-surf-2)';
+        if (!item.comingSoon) e.currentTarget.style.background = 'var(--color-surf-2)';
         setIsHovered(true);
       }}
       onMouseLeave={e => {
