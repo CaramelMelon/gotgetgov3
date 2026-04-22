@@ -134,7 +134,6 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
         background: 'none', border: 'none', cursor: item.comingSoon ? 'not-allowed' : 'pointer',
         transition: 'background 0.12s',
         position: 'relative',
-        opacity: item.comingSoon ? 0.55 : 1,
       }}
       onMouseEnter={e => {
         if (!item.comingSoon) e.currentTarget.style.background = 'var(--color-surf-2)';
@@ -150,10 +149,11 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
         background: 'var(--color-acc-bg)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
+        opacity: item.comingSoon ? 0.45 : 1,
       }}>
         <span style={{ color: 'var(--color-acc)', display: 'flex' }}><Icon size={18} strokeWidth={2} /></span>
       </div>
-      <div style={{ flex: 1, paddingRight: item.comingSoon ? 100 : 0 }}>
+      <div style={{ flex: 1, paddingRight: item.comingSoon ? 100 : 0, opacity: item.comingSoon ? 0.45 : 1 }}>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-t1)', marginBottom: 2 }}>
           {item.label}
         </p>
@@ -181,8 +181,8 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
           Coming Soon
         </div>
       )}
-      {item.comingSoon && isHovered && (
-        <div 
+      {item.comingSoon && (
+        <div
           className="hidden lg:block"
           style={{
             position: 'absolute',
