@@ -73,7 +73,7 @@ export function CreateMenu({ isOpen, onClose, onSelect }: CreateMenuProps) {
                 <CreateMenuItemButton
                   key={item.id}
                   item={item}
-                  onClick={() => { onSelect(item.id); onClose(); }}
+                  onClick={() => { if (!item.comingSoon) { onSelect(item.id); onClose(); } }}
                 />
               ))}
             </div>
@@ -105,7 +105,7 @@ export function CreateMenu({ isOpen, onClose, onSelect }: CreateMenuProps) {
                 <CreateMenuItemButton
                   key={item.id}
                   item={item}
-                  onClick={() => { onSelect(item.id); onClose(); }}
+                  onClick={() => { if (!item.comingSoon) { onSelect(item.id); onClose(); } }}
                 />
               ))}
             </div>
@@ -130,7 +130,7 @@ function CreateMenuItemButton({ item, onClick }: { item: CreateMenuItem; onClick
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
         padding: '12px 8px', borderRadius: 12,
-        background: 'none', border: 'none', cursor: 'pointer',
+        background: 'none', border: 'none', cursor: item.comingSoon ? 'default' : 'pointer',
         transition: 'background 0.12s',
         position: 'relative',
       }}
