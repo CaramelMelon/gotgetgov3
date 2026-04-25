@@ -162,93 +162,9 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
         // Panel-level background keeps list visually distinct from chat area
       }}
     >
-      {/* ── Search bar & New Chat ──────────────────────────────────────── */}
-      <div style={{ padding: '14px 12px 10px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Search bar */}
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              background: 'var(--color-surf)',
-              borderRadius: 9,
-              padding: '8px 11px',
-              border: searchFocused || searchQuery
-                ? '1px solid var(--color-acc)'
-                : '1px solid var(--color-bdr)',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-              boxShadow: searchFocused
-                ? '0 0 0 3px var(--color-acc-bg)'
-                : 'none',
-            }}
-          >
-            <IconSearch size={13} style={{ color: searchFocused ? 'var(--color-acc)' : 'var(--color-t3)', flexShrink: 0, transition: 'color 0.15s' }} />
-            <input
-              type="text"
-              placeholder="Search circles…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                fontFamily: 'var(--font-body)',
-                fontSize: 12,
-                color: 'var(--color-t1)',
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-t3)', lineHeight: 0 }}
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
+      {/* Search bar, New Chat button, and Stories strip are hidden but logic is preserved */}
 
-          {/* New Chat button */}
-          <button
-            aria-label="New message"
-            onClick={() => setShowComposeMenu(true)}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: 'var(--color-acc-bg)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-acc)',
-              flexShrink: 0,
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--color-acc) 22%, transparent)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-acc-bg)'; }}
-          >
-            <IconPencil size={15} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Stories strip (always visible) ──────────────────────────────── */}
-      {profile && (
-        <div style={{ flexShrink: 0 }}>
-          <StoriesStrip
-            currentUser={profile as Profile}
-            conversations={conversations}
-          />
-        </div>
-      )}
-
-      {/* ── Tab bar (below stories) ──────────────────────────────────────── */}
+      {/* ── Tab bar ──────────────────────────────────────── */}
       <div style={{
         flexShrink: 0,
         display: 'flex',
