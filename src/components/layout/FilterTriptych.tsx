@@ -10,6 +10,9 @@ interface FilterTriptychProps {
   onSportChange: (v: FilterSport) => void;
   onDistanceChange: (v: number) => void;
   onSkillChange: (v: FilterSkill) => void;
+  myClubs: { id: string; name: string }[];
+  selectedClubIds: string[];
+  onClubSelectionChange: (ids: string[]) => void;
 }
 
 export interface FilterTriptychHandle {
@@ -65,6 +68,7 @@ function Col({ label, value, onClick, btnRef }: {
 export const FilterTriptych = forwardRef<FilterTriptychHandle, FilterTriptychProps>(function FilterTriptych({
   sport, distanceKm, skill,
   onSportChange, onDistanceChange, onSkillChange,
+  myClubs, selectedClubIds, onClubSelectionChange,
 }, ref) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'sport' | 'distance' | 'skill' | null>(null);
@@ -94,7 +98,7 @@ export const FilterTriptych = forwardRef<FilterTriptychHandle, FilterTriptychPro
     setAnchorEl(null);
   };
 
-  const distLabel = `${Math.round(distanceKm * 0.621)} miles`;
+  const distLabel = distanceKm === 0 ? 'Club only' : `${Math.round(distanceKm * 0.621)} miles`;
 
   return (
     <>
@@ -123,10 +127,13 @@ export const FilterTriptych = forwardRef<FilterTriptychHandle, FilterTriptychPro
         onSportChange={onSportChange}
         onDistanceChange={onDistanceChange}
         onSkillChange={onSkillChange}
+        onClubSelectionChange={onClubSelectionChange}
         sports={SPORTS}
         distances={DISTANCES}
         skills={SKILLS}
         anchorEl={anchorEl}
+        myClubs={myClubs}
+        selectedClubIds={selectedClubIds}
       />
     </>
   );

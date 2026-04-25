@@ -14,10 +14,13 @@ interface FilterModalProps {
   onSportChange: (v: FilterSport) => void;
   onDistanceChange: (v: number) => void;
   onSkillChange: (v: FilterSkill) => void;
+  onClubSelectionChange: (ids: string[]) => void;
   sports: FilterSport[];
   distances: number[];
   skills: FilterSkill[];
   anchorEl?: HTMLElement | null;
+  myClubs: { id: string; name: string }[];
+  selectedClubIds: string[];
 }
 
 const SPORT_LABEL: Record<string, string> = {
@@ -47,15 +50,20 @@ export function FilterModal({
   onSportChange,
   onDistanceChange,
   onSkillChange,
+  onClubSelectionChange,
   sports,
   distances,
   skills,
   anchorEl,
+  myClubs,
+  selectedClubIds,
 }: FilterModalProps) {
-  // Continuous miles value for the distance slider (6–50 mi)
+  // Continuous miles value for the distance slider (0–50 mi; 0 = Club only)
   const [distMiles, setDistMiles] = useState(() => Math.round(distanceKm * 0.621));
+  const [localSelectedClubs, setLocalSelectedClubs] = useState<string[]>(selectedClubIds);
   // Sync when modal reopens with a different distanceKm
   useEffect(() => { setDistMiles(Math.round(distanceKm * 0.621)); }, [distanceKm]);
+  useEffect(() => { setLocalSelectedClubs(selectedClubIds); }, [isOpen]);
 
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
   const usePopover = isDesktop && !!anchorEl;
@@ -124,8 +132,9 @@ export function FilterModal({
       )}
 
       {activeFilter === 'distance' && (() => {
-        const MIN_MI = 1, MAX_MI = 50;
-        const pct = ((distMiles - MIN_MI) / (MAX_MI - MIN_MI)) * 100;
+        const MIN_MI = 0, MAX_MI = 50;
+        const pct = (distMiles / MAX_MI) * 100;
+        const isClubMode = distMiles === 0;
         return (
           <div style={{ paddingTop: 56, paddingBottom: 8 }}>
             {/* Slider track area */}
@@ -142,7 +151,7 @@ export function FilterModal({
                 whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1,
                 boxShadow: '0 2px 8px rgba(22,212,106,0.35)',
               }}>
-                {distMiles} miles
+                {isClubMode ? 'Club only' : `${distMiles} miles`}
                 {/* Arrow */}
                 <div style={{
                   position: 'absolute', bottom: -7, left: '50%',
@@ -183,15 +192,81 @@ export function FilterModal({
 
               {/* Min/Max labels */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '0 2px' }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)' }}>1 mi</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)' }}>Club</span>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)' }}>50 mi</span>
               </div>
             </div>
 
+            {/* Club picker — shown only at 0 miles */}
+            {isClubMode && (
+              <div style={{ marginTop: 4, marginBottom: 8 }}>
+                <p style={{
+                  fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t2)',
+                  marginBottom: 10, marginTop: 0,
+                }}>
+                  Select clubs to show players from:
+                </p>
+                {myClubs.length === 0 ? (
+                  <p style={{
+                    fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t3)',
+                    margin: 0, padding: '14px 0',
+                  }}>
+                    You haven't joined any clubs yet.
+                  </p>
+                ) : (
+                  myClubs.map(club => {
+                    const selected = localSelectedClubs.includes(club.id);
+                    return (
+                      <button
+                        key={club.id}
+                        onClick={() => setLocalSelectedClubs(prev =>
+                          selected ? prev.filter(id => id !== club.id) : [...prev, club.id]
+                        )}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          width: '100%', padding: '12px 14px', marginBottom: 8,
+                          borderRadius: 12,
+                          border: `1.5px solid ${selected ? 'var(--color-acc)' : 'var(--color-bdr)'}`,
+                          background: selected ? 'var(--color-acc-bg)' : 'var(--color-surf)',
+                          cursor: 'pointer', textAlign: 'left',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span style={{
+                          fontFamily: 'var(--font-body)', fontWeight: 600,
+                          fontSize: 14, color: 'var(--color-t1)', flex: 1,
+                        }}>
+                          {club.name}
+                        </span>
+                        {selected && (
+                          <span style={{
+                            width: 20, height: 20, borderRadius: '50%',
+                            background: 'var(--color-acc)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
             {/* Apply button */}
             <button
               onClick={() => {
-                onDistanceChange(Math.round(distMiles / 0.621));
+                if (isClubMode) {
+                  onDistanceChange(0);
+                  onClubSelectionChange(localSelectedClubs);
+                } else {
+                  onDistanceChange(Math.round(distMiles / 0.621));
+                  onClubSelectionChange([]);
+                }
                 onClose();
               }}
               style={{

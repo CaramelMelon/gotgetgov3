@@ -70,6 +70,8 @@ export function DiscoverPage() {
   const [sport, setSport]     = useState<FilterSport>('tennis');
   const [distKm, setDistKm]   = useState(40);
   const [skill, setSkill]     = useState<FilterSkill>('any');
+  const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
+  const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
 
   // Swipe / favorites
   const [swipedIds, setSwipedIds]     = useState<Set<string>>(new Set());
@@ -90,17 +92,20 @@ export function DiscoverPage() {
     if (!user || !profile) return;
     setLoading(true);
 
-    const [profilesRes, sportProfilesRes, clubsRes, swipedRes] = await Promise.all([
+    const [profilesRes, sportProfilesRes, clubsRes, swipedRes, myClubsRes] = await Promise.all([
       supabase.from('profiles')
         .select('id, full_name, avatar_url, location_lat, location_lng, last_seen')
         .neq('id', user.id),
       supabase.from('user_sport_profiles')
         .select('user_id, sport, self_assessed_level, play_style, preferred_time, availability'),
-      supabase.from('user_clubs').select('user_id, clubs(name)'),
+      supabase.from('user_clubs').select('user_id, club_id, clubs(id, name)'),
       supabase.from('swipe_matches')
         .select('target_user_id')
         .eq('user_id', user.id)
         .eq('sport', (sport === 'all' ? 'tennis' : sport) as any),
+      supabase.from('user_clubs')
+        .select('club_id, clubs(id, name)')
+        .eq('user_id', user.id),
     ]);
 
     const profiles      = (profilesRes.data ?? []) as any[];
@@ -117,9 +122,20 @@ export function DiscoverPage() {
     });
 
     const clubMap = new Map<string, string>();
+    const clubIdMap = new Map<string, string[]>();
     userClubs.forEach((uc: any) => {
       if (uc.clubs?.name) clubMap.set(uc.user_id, uc.clubs.name);
+      if (uc.club_id) {
+        const arr = clubIdMap.get(uc.user_id) ?? [];
+        arr.push(uc.club_id);
+        clubIdMap.set(uc.user_id, arr);
+      }
     });
+
+    const myClubList = ((myClubsRes.data ?? []) as any[])
+      .filter((r: any) => r.clubs?.id && r.clubs?.name)
+      .map((r: any) => ({ id: r.clubs.id as string, name: r.clubs.name as string }));
+    setMyClubs(myClubList);
 
     // Current user sport profiles — already in the batch above, no extra query needed
     const mySpProfiles: any[] = sportProfiles.filter((sp: any) => sp.user_id === user.id);
@@ -137,8 +153,15 @@ export function DiscoverPage() {
         if (sport !== 'all' && sp.sport !== sport) continue;
         if (skill !== 'any' && sp.self_assessed_level !== skill) continue;
 
-        const dist = haversineKm(myLat, myLng, p.location_lat ?? myLat, p.location_lng ?? myLng);
-        if (dist > distKm) continue;
+        let dist = 0;
+        if (distKm === 0) {
+          if (selectedClubIds.length === 0) continue;
+          const theirClubs = clubIdMap.get(p.id) ?? [];
+          if (!selectedClubIds.some(id => theirClubs.includes(id))) continue;
+        } else {
+          dist = haversineKm(myLat, myLng, p.location_lat ?? myLat, p.location_lng ?? myLng);
+          if (dist > distKm) continue;
+        }
         if (swiped.has(p.id)) continue;
 
         const mySp = mySpMap.get(sp.sport) ?? mySpMap.values().next().value;
@@ -177,7 +200,7 @@ export function DiscoverPage() {
     result.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
     setPlayers(result);
     setLoading(false);
-  }, [user, profile, sport, distKm, skill]);
+  }, [user, profile, sport, distKm, skill, selectedClubIds]);
 
   useEffect(() => { fetchPlayers(); }, [fetchPlayers]);
 
@@ -344,6 +367,9 @@ export function DiscoverPage() {
         onSportChange={setSport}
         onDistanceChange={setDistKm}
         onSkillChange={setSkill}
+        myClubs={myClubs}
+        selectedClubIds={selectedClubIds}
+        onClubSelectionChange={setSelectedClubIds}
       />
 
       {isDesktop ? (
