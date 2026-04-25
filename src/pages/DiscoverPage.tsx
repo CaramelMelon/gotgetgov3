@@ -277,6 +277,9 @@ export function DiscoverPage() {
         onSportChange={setSport}
         onDistanceChange={setDistKm}
         onSkillChange={setSkill}
+        myClubs={[]}
+        selectedClubIds={[]}
+        onClubSelectionChange={() => {}}
       />
 
       <SwipeDeck
