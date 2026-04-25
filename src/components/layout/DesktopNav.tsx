@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Compass, Newspaper, Calendar, Users, Swords } from 'lucide-react';
 import { NotificationBadge } from '../ui/NotificationBadge';
 import { TABS, type TabId } from '../../types';
+import { useMockMode } from '../../contexts/MockModeContext';
 
 interface DesktopNavProps {
   unreadMessages?: number;
@@ -38,30 +39,29 @@ type NavItem = {
 export function DesktopNav({ unreadMessages = 0 }: DesktopNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMock = useMockMode();
+  const prefix = isMock ? '/mock' : '';
 
   const searchParam = new URLSearchParams(location.search).get('view');
 
-  // Determine which desktop tab is active
   const getActiveId = () => {
     const pathname = location.pathname;
-    if (pathname.startsWith('/circles')) {
-      // Play = matches view (default) | Circles = circles view
+    if (pathname.includes('/circles')) {
       return searchParam === 'circles' ? 'circles' : 'play';
     }
-    return TABS.find((tab) => pathname.startsWith(tab.path))?.id || 'discover';
+    return TABS.find((tab) => pathname.endsWith(tab.path))?.id || 'discover';
   };
   const activeId = getActiveId();
 
-  // Build the desktop nav items: Discover · News · Schedule · Play · Circles
   const items: NavItem[] = [
-    { id: 'discover', label: 'Discover', path: '/discover', icon: Compass },
-    { id: 'news',     label: 'News',     path: '/news',     icon: Newspaper },
-    { id: 'schedule', label: 'Schedule', path: '/schedule', icon: Calendar },
-    { id: 'play',     label: 'Matches',  path: '/circles?view=matches', icon: Swords },
+    { id: 'discover', label: 'Discover', path: `${prefix}/discover`, icon: Compass },
+    { id: 'news',     label: 'News',     path: `${prefix}/news`,     icon: Newspaper },
+    { id: 'schedule', label: 'Schedule', path: `${prefix}/schedule`, icon: Calendar },
+    { id: 'play',     label: 'Matches',  path: isMock ? `${prefix}/circles` : '/circles?view=matches', icon: Swords },
     {
       id: 'circles',
       label: 'Circles',
-      path: `/circles?view=${CIRCLES_DESKTOP_PARAM}`,
+      path: isMock ? `${prefix}/circles` : `/circles?view=${CIRCLES_DESKTOP_PARAM}`,
       icon: Users,
       showBadge: unreadMessages > 0,
     },

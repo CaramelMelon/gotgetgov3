@@ -18,6 +18,7 @@ import {
   IconClock,
 } from '@/design-system/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMockMode } from '@/contexts/MockModeContext';
 import { supabase } from '@/lib/supabase';
 import type { SportType, LikedPlayer } from '@/types/database';
 import { fetchPendingScoreMatches } from '@/lib/scoring';
@@ -87,6 +88,7 @@ function MiniStatCard({
 export function ProfilePage() {
   const navigate = useNavigate();
   const { profile, user, signOut, updateProfile } = useAuth();
+  const isMockMode = useMockMode();
   const { theme, toggle } = useThemeContext();
   const isDark = theme === 'dark';
   const isDesktop = useIsDesktop();
@@ -177,6 +179,10 @@ export function ProfilePage() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleSignIn = () => {
+    navigate('/auth?mode=signin');
   };
 
   const handleAvatarChange = async (url: string | null, file?: File) => {
@@ -794,27 +800,49 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* ── I. Sign Out ──────────────────────────────────────────────────────── */}
+      {/* ── I. Sign In / Sign Out ────────────────────────────────────────────── */}
       <div style={{ padding: '0 var(--space-5)', marginTop: 'var(--space-6)' }}>
-        <button
-          onClick={handleSignOut}
-          style={{
-            width: '100%',
-            padding: 'var(--space-4)',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-red-bg)',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            fontSize: 'var(--text-base)',
-            fontWeight: 'var(--weight-semibold)',
-            color: 'var(--color-red)',
-            letterSpacing: 'var(--tracking-wide)',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          Sign Out
-        </button>
+        {isMockMode ? (
+          <button
+            onClick={handleSignIn}
+            style={{
+              width: '100%',
+              padding: 'var(--space-4)',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-acc)',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--weight-semibold)',
+              color: 'var(--color-bg)',
+              letterSpacing: 'var(--tracking-wide)',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Sign In
+          </button>
+        ) : (
+          <button
+            onClick={handleSignOut}
+            style={{
+              width: '100%',
+              padding: 'var(--space-4)',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-red-bg)',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--weight-semibold)',
+              color: 'var(--color-red)',
+              letterSpacing: 'var(--tracking-wide)',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Sign Out
+          </button>
+        )}
       </div>
 
       {/* Bottom breathing room */}

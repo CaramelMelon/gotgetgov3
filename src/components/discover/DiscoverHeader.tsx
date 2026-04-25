@@ -3,8 +3,6 @@ interface DiscoverHeaderProps {
   skillTolerance?: number;
   onDistanceClick?: () => void;
   onSkillClick?: () => void;
-  isGuest?: boolean;
-  guestSwipeCount?: number;
 }
 
 export function DiscoverHeader({
@@ -12,8 +10,6 @@ export function DiscoverHeader({
   skillTolerance,
   onDistanceClick,
   onSkillClick,
-  isGuest = false,
-  guestSwipeCount = 0,
 }: DiscoverHeaderProps) {
   const getDistanceText = () => {
     if (maxDistance === undefined) return '25 miles';

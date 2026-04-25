@@ -16,7 +16,7 @@ import { CalendarBanner, CalendarPromptModal } from '@/components/schedule';
 import { ScheduleSkeleton } from '@/components/skeletons';
 import { useFilters } from '@/contexts/FilterContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMockMode } from '@/contexts/MockModeContext';
+import { useMockMode, safeSessionGet, safeSessionSet } from '@/contexts/MockModeContext';
 import { MOCK_SCHEDULE } from '@/data/mockDemoData';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
@@ -46,7 +46,7 @@ interface ScheduleItem {
 export function SchedulePage() {
   const navigate = useNavigate();
   const { scheduleFilter } = useFilters();
-  const { user, isGuest, profile } = useAuth();
+  const { user, profile } = useAuth();
   const isMockMode = useMockMode();
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
@@ -96,10 +96,10 @@ export function SchedulePage() {
     }
     if (user) {
       fetchJoinedItems();
-    } else if (isGuest) {
+    } else {
       setLoadingSchedule(false);
     }
-  }, [user, isGuest, isMockMode]);
+  }, [user, isMockMode]);
 
   const fetchJoinedItems = async () => {
     if (!user) return;
@@ -255,11 +255,11 @@ export function SchedulePage() {
     // If calendar is available but not connected, offer to sync confirmed items once per session
     if (
       localStorage.getItem('calendar_connected') !== 'true' &&
-      sessionStorage.getItem('calendar_prompt_shown') !== 'true'
+      safeSessionGet('calendar_prompt_shown') !== 'true'
     ) {
       const firstConfirmed = joinedItems.find((item) => item.status === 'confirmed');
       if (firstConfirmed) {
-        sessionStorage.setItem('calendar_prompt_shown', 'true');
+        safeSessionSet('calendar_prompt_shown', 'true');
         const rawId = firstConfirmed.id.replace(/^(event-|comp-|challenge-)/, '');
         let itemType: 'challenge' | 'event' | 'competition' = 'challenge';
         if (firstConfirmed.id.startsWith('event-')) itemType = 'event';

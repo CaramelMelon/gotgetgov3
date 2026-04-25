@@ -19,7 +19,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { CirclesPage } from '../CirclesPage';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { NavVisibilityContext } from '../../../contexts/NavVisibilityContext';
-import { GuestTutorialContext } from '../../../contexts/GuestTutorialContext';
 import * as feedApi from '../../../api/feed-api';
 import type { FeedData } from '../../../api/feed-api';
 
@@ -129,16 +128,11 @@ function TestWrapper({ children, user = mockUser, profile = mockProfile }: any) 
           profile,
           session: null,
           loading: false,
-          isGuest: false,
-          guestSwipeCount: 0,
           signUp: vi.fn(),
           signIn: vi.fn(),
           signInWithGoogle: vi.fn(),
           signOut: vi.fn(),
           updateProfile: vi.fn(),
-          enterGuestMode: vi.fn(),
-          exitGuestMode: vi.fn(),
-          incrementGuestSwipeCount: vi.fn(),
         }}
       >
         <NavVisibilityContext.Provider
@@ -147,22 +141,7 @@ function TestWrapper({ children, user = mockUser, profile = mockProfile }: any) 
             setHideNav: vi.fn(),
           }}
         >
-          <GuestTutorialContext.Provider
-            value={{
-              tutorialStep: null,
-              tutorialMessages: [],
-              isTutorialActive: false,
-              startTutorial: vi.fn(),
-              advanceTutorial: vi.fn(),
-              resetTutorial: vi.fn(),
-              skipTutorial: vi.fn(),
-              addUserMessage: vi.fn(),
-              registerTarget: vi.fn(),
-              targetElements: {},
-            }}
-          >
-            {children}
-          </GuestTutorialContext.Provider>
+          {children}
         </NavVisibilityContext.Provider>
       </AuthContext.Provider>
     </BrowserRouter>

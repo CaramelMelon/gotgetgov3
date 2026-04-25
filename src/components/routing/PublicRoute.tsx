@@ -17,9 +17,7 @@ export function PublicRoute({ children }: PublicRouteProps) {
   }
 
   if (user) {
-    if (!profile?.onboarding_completed) {
-      return <Navigate to="/onboarding" replace />;
-    }
+    if (!profile?.onboarding_completed) return <Navigate to="/onboarding" replace />;
     return <Navigate to="/discover" replace />;
   }
 

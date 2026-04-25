@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Users, Trophy, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGuestTutorial } from '@/contexts/GuestTutorialContext';
 import { useThemeContext } from '@/contexts/ThemeContext';
 import { AuthBottomSheet } from './AuthBottomSheet';
 import { Button } from '@/components/ui/button';
@@ -42,14 +41,17 @@ export function LandingPage() {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const navigate = useNavigate();
-  const { enterGuestMode } = useAuth();
-  const { startTutorial } = useGuestTutorial();
   const logoSrc = '/GotGetGo Logo.png';
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref');
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
     if (ref) localStorage.setItem('gotgetgo_ref', ref);
+    if (params.get('mode') === 'signin') {
+      setAuthMode('signin');
+      setShowAuth(true);
+    }
   }, []);
 
   return (
@@ -163,7 +165,7 @@ export function LandingPage() {
                   variant="outline"
                   size="lg"
                   style={{ width: '100%', marginBottom: 12 }}
-                  onClick={() => { enterGuestMode(); startTutorial(); navigate('/discover'); }}
+                  onClick={() => navigate('/mock')}
                 >
                   Continue as Guest
                 </Button>
@@ -293,7 +295,7 @@ export function LandingPage() {
                 variant="outline"
                 size="lg"
                 style={{ width: '100%', marginBottom: 10 }}
-                onClick={() => { enterGuestMode(); startTutorial(); navigate('/discover'); }}
+                onClick={() => navigate('/mock')}
               >
                 Continue as Guest
               </Button>

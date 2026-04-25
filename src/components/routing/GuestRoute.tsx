@@ -1,12 +1,14 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 
 interface GuestRouteProps {
   children: React.ReactNode;
 }
 
 export function GuestRoute({ children }: GuestRouteProps) {
-  const { user, loading, isGuest, profile } = useAuth();
+  const { user, loading, profile } = useAuth();
+  const isMockMode = useMockMode();
 
   if (loading) {
     return (
@@ -16,14 +18,9 @@ export function GuestRoute({ children }: GuestRouteProps) {
     );
   }
 
-  if (!user && !isGuest) {
-    return <Navigate to="/auth" replace />;
-  }
+  if (!user && !isMockMode) return <Navigate to="/auth" replace />;
 
-  // If authenticated user hasn't completed onboarding, redirect to onboarding
-  if (user && !profile?.onboarding_completed) {
-    return <Navigate to="/onboarding" replace />;
-  }
+  if (user && !profile?.onboarding_completed) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;
 }
