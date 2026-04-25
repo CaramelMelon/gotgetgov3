@@ -224,7 +224,7 @@ function FloatingLabelInput({ id, label, type, value, onChange, error, autoCompl
             border: 'none',
             outline: 'none',
             fontFamily: 'var(--font-body)',
-            fontSize: 15,
+            fontSize: 16,
             color: CARD_TEXT_PRIMARY,
             width: trailingAction ? 'calc(100% - 56px)' : '100%',
             boxSizing: 'border-box',
@@ -368,6 +368,48 @@ function SocialGoogleButton({ onClick }: { onClick: () => Promise<{ error: Error
   );
 }
 
+// ─── SocialAppleButton ────────────────────────────────────────────────────────
+
+function SocialAppleButton({ onClick }: { onClick: () => Promise<{ error: Error | null }> }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handle() {
+    setLoading(true);
+    await onClick();
+    setLoading(false);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handle}
+      disabled={loading}
+      style={{
+        width: '100%',
+        height: 48,
+        borderRadius: 9999,
+        border: '1.5px solid rgba(20,18,14,0.15)',
+        background: '#000000',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        fontFamily: 'var(--font-body)',
+        fontSize: 14,
+        fontWeight: 600,
+        color: '#FFFFFF',
+        cursor: 'pointer',
+        opacity: loading ? 0.7 : 1,
+      }}
+    >
+      <svg width="16" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+      </svg>
+      {loading ? 'Connecting…' : 'Continue with Apple'}
+    </button>
+  );
+}
+
 // ─── ErrorMessage ─────────────────────────────────────────────────────────────
 
 function ErrorMessage({ message }: { message: string }) {
@@ -497,7 +539,13 @@ function CardPanel({ children }: { children: React.ReactNode }) {
 // ─── SignInScreen ─────────────────────────────────────────────────────────────
 
 function SignInScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn } = useAuth();
+  const [comingSoon, setComingSoon] = useState(false);
+
+  function handleComingSoon() {
+    setComingSoon(true);
+    setTimeout(() => setComingSoon(false), 2500);
+  }
 
   const [fields, setFields] = useState<SignInFields>({ email: '', password: '', rememberMe: false });
   const [errors, setErrors] = useState<SignInErrors>({});
@@ -564,7 +612,13 @@ function SignInScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
         </button>
 
         <OrDivider />
-        <SocialGoogleButton onClick={signInWithGoogle} />
+        {comingSoon && (
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 13, color: CARD_TEXT_SECONDARY, padding: '4px 0 8px' }}>
+            🚧 Coming soon — use Email for now
+          </div>
+        )}
+        <SocialGoogleButton onClick={async () => { handleComingSoon(); return { error: null }; }} />
+        <SocialAppleButton onClick={async () => { handleComingSoon(); return { error: null }; }} />
 
         <p style={switchLinkContainerStyle}>
           Don't have an account?{' '}
@@ -578,7 +632,13 @@ function SignInScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
 // ─── SignUpScreen ─────────────────────────────────────────────────────────────
 
 function SignUpScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
+  const [comingSoon, setComingSoon] = useState(false);
+
+  function handleComingSoon() {
+    setComingSoon(true);
+    setTimeout(() => setComingSoon(false), 2500);
+  }
 
   const [fields, setFields] = useState<SignUpFields>({ fullName: '', email: '', password: '', agreedToTerms: false });
   const [errors, setErrors] = useState<SignUpErrors>({});
@@ -683,7 +743,13 @@ function SignUpScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
         </button>
 
         <OrDivider />
-        <SocialGoogleButton onClick={signInWithGoogle} />
+        {comingSoon && (
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 13, color: CARD_TEXT_SECONDARY, padding: '4px 0 8px' }}>
+            🚧 Coming soon — use Email for now
+          </div>
+        )}
+        <SocialGoogleButton onClick={async () => { handleComingSoon(); return { error: null }; }} />
+        <SocialAppleButton onClick={async () => { handleComingSoon(); return { error: null }; }} />
 
         <p style={switchLinkContainerStyle}>
           Already have an account?{' '}

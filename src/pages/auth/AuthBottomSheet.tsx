@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -10,10 +10,12 @@ interface AuthBottomSheetProps {
   onToggleMode: () => void;
 }
 
+type View = 'providers' | 'email' | 'phone' | 'phone-otp';
+
 export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheetProps) {
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle } = useAuth();
-  const [showEmailForm, setShowEmailForm] = useState(false);
+  const { signIn, signUp, signInWithGoogle, signInWithApple, signInWithPhone, verifyPhoneOtp } = useAuth();
+  const [view, setView] = useState<View>('providers');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   useState(() => {
@@ -35,45 +37,68 @@ export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheet
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       if (mode === 'signup') {
         const { error } = await signUp(email, password, fullName);
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate('/onboarding');
-        }
+        if (error) setError(error.message);
+        else navigate('/onboarding');
       } else {
         const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate('/discover');
-        }
+        if (error) setError(error.message);
+        else navigate('/discover');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
-    const { error } = await signInWithGoogle();
-    if (error) setError(error.message);
+    setLoading(true);
+    try {
+      const { error } = await signInWithPhone(phone);
+      if (error) setError(error.message);
+      else setView('phone-otp');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const { error } = await verifyPhoneOtp(phone, otp);
+      if (error) setError(error.message);
+      else navigate('/onboarding');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleComingSoon = () => {
+    setError(null);
+    setComingSoon(true);
+    setTimeout(() => setComingSoon(false), 2500);
+  };
+
+  const [comingSoon, setComingSoon] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: 56, paddingLeft: 48, paddingRight: 16, borderRadius: 12,
     border: '1px solid var(--color-bdr)', background: 'var(--color-surf-2)',
-    color: 'var(--color-t1)', fontFamily: 'var(--font-body)', fontSize: 15, outline: 'none',
+    color: 'var(--color-t1)', fontFamily: 'var(--font-body)', fontSize: 16, outline: 'none',
     boxSizing: 'border-box', transition: 'border-color 0.2s',
   };
 
@@ -85,10 +110,22 @@ export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheet
     cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s',
   };
 
+  const submitBtnStyle: React.CSSProperties = {
+    width: '100%', height: 56, borderRadius: 12, border: 'none',
+    background: 'var(--color-acc)', color: 'var(--color-bg)',
+    fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 16,
+    cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    boxShadow: '0 4px 24px rgba(22,212,106,0.3)',
+  };
+
+  const spinner = (
+    <div style={{ width: 20, height: 20, border: '2px solid var(--color-bg)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+  );
+
   const providers = [
     {
-      id: 'google',
-      label: 'Google',
+      id: 'google', label: 'Google', comingSoon: true,
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -97,29 +134,26 @@ export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheet
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
         </svg>
       ),
-      onClick: handleGoogleSignIn,
+      onClick: handleComingSoon,
     },
     {
-      id: 'apple',
-      label: 'Apple',
+      id: 'apple', label: 'Apple', comingSoon: true,
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
         </svg>
       ),
-      onClick: () => {},
+      onClick: handleComingSoon,
     },
     {
-      id: 'phone',
-      label: 'Phone',
+      id: 'phone', label: 'Phone', comingSoon: true,
       icon: <Phone className="w-5 h-5" />,
-      onClick: () => {},
+      onClick: handleComingSoon,
     },
     {
-      id: 'email',
-      label: 'Email',
+      id: 'email', label: 'Email', comingSoon: false,
       icon: <Mail className="w-5 h-5" />,
-      onClick: () => setShowEmailForm(true),
+      onClick: () => { setError(null); setView('email'); },
     },
   ];
 
@@ -164,9 +198,7 @@ export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheet
               {mode === 'signin' ? 'Welcome back' : 'Create your account'}
             </h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--color-t2)' }}>
-              {mode === 'signin'
-                ? 'Sign in to continue playing'
-                : 'Join thousands of racquet sports players'}
+              {mode === 'signin' ? 'Sign in to continue playing' : 'Join thousands of racquet sports players'}
             </p>
           </div>
 
@@ -179,100 +211,183 @@ export function AuthBottomSheet({ mode, onClose, onToggleMode }: AuthBottomSheet
             </motion.div>
           )}
 
-          {!showEmailForm ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {providers.map((provider) => (
-                <motion.button
-                  key={provider.id}
-                  onClick={provider.onClick}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  style={providerBtnStyle}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-acc)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-acc-bg)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-bdr)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surf-2)'; }}
-                >
-                  {provider.icon}
-                  <span>Continue with {provider.label}</span>
-                </motion.button>
-              ))}
-            </div>
-          ) : (
-            <motion.form
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              onSubmit={handleSubmit}
-              style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(false)}
-                style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}
+          <AnimatePresence mode="wait" initial={false}>
+            {view === 'providers' && (
+              <motion.div key="providers" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
               >
-                ← Back to all options
-              </button>
+                {providers.map((provider) => (
+                  <motion.button
+                    key={provider.id}
+                    onClick={provider.onClick}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{
+                      ...providerBtnStyle,
+                      opacity: provider.comingSoon ? 0.6 : 1,
+                      position: 'relative',
+                      justifyContent: 'flex-start',
+                      paddingLeft: 20,
+                    }}
+                    onMouseEnter={e => { if (!provider.comingSoon) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-acc)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-acc-bg)'; } }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-bdr)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surf-2)'; }}
+                  >
+                    {provider.icon}
+                    <span style={{ flex: 1, textAlign: 'center', marginRight: provider.comingSoon ? 0 : 20 }}>
+                      Continue with {provider.label}
+                    </span>
+                    {provider.comingSoon && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
+                        color: 'var(--color-t3)', background: 'var(--color-surf-3, rgba(0,0,0,0.08))',
+                        borderRadius: 6, padding: '3px 7px', marginRight: 4, whiteSpace: 'nowrap',
+                        textTransform: 'uppercase',
+                      }}>
+                        Soon
+                      </span>
+                    )}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
 
-              {mode === 'signup' && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative' }}>
-                  <User className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
-                  <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} style={inputStyle} required />
-                </motion.div>
-              )}
-
-              <div style={{ position: 'relative' }}>
-                <Mail className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required />
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                <Lock className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: 48 }}
-                  required minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-t3)' }}
+            {view === 'email' && (
+              <motion.form key="email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleEmailSubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+              >
+                <button type="button" onClick={() => setView('providers')}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  ← Back to all options
                 </button>
-              </div>
 
-              <motion.button
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: loading ? 1 : 1.01 }}
-                whileTap={{ scale: loading ? 1 : 0.98 }}
-                style={{
-                  width: '100%', height: 56, borderRadius: 12, border: 'none',
-                  background: 'var(--color-acc)', color: 'var(--color-bg)',
-                  fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 16,
-                  cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: '0 4px 24px rgba(22,212,106,0.3)',
-                }}
+                {mode === 'signup' && (
+                  <div style={{ position: 'relative' }}>
+                    <User className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
+                    <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} style={inputStyle} required />
+                  </div>
+                )}
+
+                <div style={{ position: 'relative' }}>
+                  <Mail className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required />
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <Lock className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ ...inputStyle, paddingRight: 48 }}
+                    required minLength={6}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-t3)' }}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <motion.button type="submit" disabled={loading} whileHover={{ scale: loading ? 1 : 1.01 }} whileTap={{ scale: loading ? 1 : 0.98 }} style={submitBtnStyle}>
+                  {loading ? spinner : mode === 'signin' ? 'Sign In' : 'Create Account'}
+                </motion.button>
+              </motion.form>
+            )}
+
+            {view === 'phone' && (
+              <motion.form key="phone" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                onSubmit={handlePhoneSubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
               >
-                {loading ? (
-                  <div style={{ width: 20, height: 20, border: '2px solid var(--color-bg)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                ) : mode === 'signin' ? 'Sign In' : 'Create Account'}
-              </motion.button>
-            </motion.form>
-          )}
+                <button type="button" onClick={() => setView('providers')}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}
+                >
+                  ← Back to all options
+                </button>
 
-          <div style={{ marginTop: 32, textAlign: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)' }}>
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            </span>
-            <button
-              onClick={onToggleMode}
-              style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 700, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              {mode === 'signin' ? 'Sign Up' : 'Sign In'}
-            </button>
-          </div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', margin: 0 }}>
+                  Enter your phone number and we'll send you a one-time code.
+                </p>
+
+                <div style={{ position: 'relative' }}>
+                  <Phone className="w-5 h-5" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
+                  <input
+                    type="tel"
+                    placeholder="+1 555 000 0000"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={inputStyle}
+                    required
+                    autoComplete="tel"
+                  />
+                </div>
+
+                <motion.button type="submit" disabled={loading} whileHover={{ scale: loading ? 1 : 1.01 }} whileTap={{ scale: loading ? 1 : 0.98 }} style={submitBtnStyle}>
+                  {loading ? spinner : 'Send Code'}
+                </motion.button>
+              </motion.form>
+            )}
+
+            {view === 'phone-otp' && (
+              <motion.form key="phone-otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleOtpSubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+              >
+                <button type="button" onClick={() => { setView('phone'); setOtp(''); setError(null); }}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}
+                >
+                  ← Change number
+                </button>
+
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', margin: 0 }}>
+                  We sent a 6-digit code to <strong style={{ color: 'var(--color-t1)' }}>{phone}</strong>. Enter it below.
+                </p>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  style={{ ...inputStyle, paddingLeft: 16, textAlign: 'center', fontSize: 24, letterSpacing: '0.3em', fontWeight: 700 }}
+                  required
+                  autoComplete="one-time-code"
+                />
+
+                <motion.button type="submit" disabled={loading || otp.length < 6}
+                  whileHover={{ scale: loading ? 1 : 1.01 }} whileTap={{ scale: loading ? 1 : 0.98 }}
+                  style={{ ...submitBtnStyle, opacity: (loading || otp.length < 6) ? 0.6 : 1, cursor: (loading || otp.length < 6) ? 'not-allowed' : 'pointer' }}
+                >
+                  {loading ? spinner : 'Verify & Continue'}
+                </motion.button>
+
+                <button type="button" onClick={handlePhoneSubmit as any}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center' }}
+                >
+                  Didn't receive it? <span style={{ color: 'var(--color-acc)', fontWeight: 600 }}>Resend</span>
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          {(view === 'providers' || view === 'email' || view === 'phone') && (
+            <div style={{ marginTop: 32, textAlign: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)' }}>
+                {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              </span>
+              <button
+                onClick={onToggleMode}
+                style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 700, color: 'var(--color-acc)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+              </button>
+            </div>
+          )}
 
           <p style={{ marginTop: 24, textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t3)', lineHeight: 1.6 }}>
             By continuing, you agree to our{' '}

@@ -15,8 +15,8 @@ const menuItems: { id: CreateMenuItemId; label: string; description: string; ico
   { id: 'match',        label: 'Match',             description: 'Request a match with a player',        icon: Swords },
   { id: 'event',        label: 'Event',             description: 'Create an open play or meetup',         icon: CalendarPlus, comingSoon: true },
   { id: 'competition',  label: 'Competition',       description: 'Start a league, tournament, or ladder', icon: Trophy, comingSoon: true },
-  { id: 'circle',       label: 'Circle / Team',     description: 'Create a group or doubles pair',        icon: Users },
-  { id: 'announcement', label: 'Announcement',      description: 'Post to your club or circle',           icon: Megaphone },
+  { id: 'circle',       label: 'Circle / Team',     description: 'Create a group or doubles pair',        icon: Users,     comingSoon: true },
+  { id: 'announcement', label: 'Announcement',      description: 'Post to your club or circle',           icon: Megaphone, comingSoon: true },
 ];
 
 // Named type alias to fix shadowing lint issue
