@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ConversationItem } from '@/types/circles';
 import type { Profile } from '@/types/database';
 import { CirclesListView } from './CirclesListView';
@@ -15,6 +16,8 @@ interface CirclesViewProps {
   loadMore: () => Promise<void>;
   loadingMore: boolean;
   selectedConversationId?: string;
+  showComposeMenu?: boolean;
+  onCloseComposeMenu?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -30,6 +33,8 @@ export function CirclesView({
   loadMore,
   loadingMore,
   selectedConversationId,
+  showComposeMenu,
+  onCloseComposeMenu,
 }: CirclesViewProps) {
   return (
     <div
@@ -51,6 +56,8 @@ export function CirclesView({
         loadMore={loadMore}
         loadingMore={loadingMore}
         selectedConversationId={selectedConversationId}
+        externalShowCompose={showComposeMenu}
+        onExternalComposeClose={onCloseComposeMenu}
       />
     </div>
   );

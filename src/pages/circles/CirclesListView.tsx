@@ -34,15 +34,21 @@ interface CirclesListViewProps {
   loadMore: () => Promise<void>;
   loadingMore: boolean;
   selectedConversationId?: string;
+  externalShowCompose?: boolean;
+  onExternalComposeClose?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function CirclesListView({ conversations, loading, error, onOpenChat, onNewChat, scrollContainerRef, hasMore, loadMore, loadingMore, selectedConversationId }: CirclesListViewProps) {
+export function CirclesListView({ conversations, loading, error, onOpenChat, onNewChat, scrollContainerRef, hasMore, loadMore, loadingMore, selectedConversationId, externalShowCompose, onExternalComposeClose }: CirclesListViewProps) {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<CirclesTab>('dms');
   const [searchQuery, setSearchQuery] = useState('');
   const [showComposeMenu, setShowComposeMenu] = useState(false);
+
+  useEffect(() => {
+    if (externalShowCompose) setShowComposeMenu(true);
+  }, [externalShowCompose]);
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCreateBroadcast, setShowCreateBroadcast] = useState(false);
@@ -164,43 +170,60 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
     >
       {/* Search bar, New Chat button, and Stories strip are hidden but logic is preserved */}
 
-      {/* ── Tab bar ──────────────────────────────────────── */}
+      {/* ── Tab bar ──────────────────────────────────────────────────────── */}
       <div style={{
         flexShrink: 0,
         display: 'flex',
+        alignItems: 'center',
         padding: '0 12px',
         borderBottom: '1px solid var(--color-bdr)',
       }}>
-        {([
-          { id: 'dms' as CirclesTab,       label: 'DMs',       icon: <MessageCircle size={12} /> },
-          { id: 'groups' as CirclesTab,    label: 'Groups',    icon: <Users size={12} /> },
-          { id: 'broadcast' as CirclesTab, label: 'Broadcast', icon: <Megaphone size={12} /> },
-        ]).map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '10px 12px 9px',
-                border: 'none',
-                borderBottom: active ? '2px solid var(--color-acc)' : '2px solid transparent',
-                background: 'none',
-                color: active ? 'var(--color-t1)' : 'var(--color-t3)',
-                fontFamily: 'var(--font-body)', fontWeight: active ? 600 : 400, fontSize: 12,
-                cursor: 'pointer', transition: 'color 0.15s, border-color 0.15s',
-                flexShrink: 0, marginBottom: -1,
-                letterSpacing: active ? '-0.01em' : '0',
-              }}
-              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)'; }}
-              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t3)'; }}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          );
-        })}
+        <div style={{ display: 'flex', flex: 1 }}>
+          {([
+            { id: 'dms' as CirclesTab,       label: 'DMs',       icon: <MessageCircle size={12} /> },
+            { id: 'groups' as CirclesTab,    label: 'Groups',    icon: <Users size={12} /> },
+            { id: 'broadcast' as CirclesTab, label: 'Broadcast', icon: <Megaphone size={12} /> },
+          ]).map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '10px 12px 9px',
+                  border: 'none',
+                  borderBottom: active ? '2px solid var(--color-acc)' : '2px solid transparent',
+                  background: 'none',
+                  color: active ? 'var(--color-t1)' : 'var(--color-t3)',
+                  fontFamily: 'var(--font-body)', fontWeight: active ? 600 : 400, fontSize: 12,
+                  cursor: 'pointer', transition: 'color 0.15s, border-color 0.15s',
+                  flexShrink: 0, marginBottom: -1,
+                  letterSpacing: active ? '-0.01em' : '0',
+                }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t2)'; }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-t3)'; }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Compose button */}
+        <button
+          aria-label="New message"
+          onClick={() => setShowComposeMenu(true)}
+          style={{
+            width: 28, height: 28, borderRadius: 7,
+            background: 'var(--color-acc-bg)', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: 'var(--color-acc)', flexShrink: 0,
+          }}
+        >
+          <IconPencil size={14} />
+        </button>
       </div>
 
       {/* ── Section label ────────────────────────────────────────────────── */}
@@ -375,7 +398,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
       {/* ── Compose Menu ──────────────────────────────────────────────── */}
       <ComposeMenu
         open={showComposeMenu}
-        onClose={() => setShowComposeMenu(false)}
+        onClose={() => { setShowComposeMenu(false); onExternalComposeClose?.(); }}
         onNewChat={() => {
           setNewChatOpen(true);
           setActiveTab('dms');
