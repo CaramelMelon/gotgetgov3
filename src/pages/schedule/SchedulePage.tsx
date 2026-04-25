@@ -733,7 +733,6 @@ function AgendaCard({ item, onPlayerClick }: {
         </div>
       </div>
 
-      <ChevronRight size={15} style={{ color: 'var(--color-t3)', flexShrink: 0 }} />
     </div>
   );
 }
