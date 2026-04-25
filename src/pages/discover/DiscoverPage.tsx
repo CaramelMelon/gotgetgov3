@@ -274,6 +274,7 @@ export function DiscoverPage() {
       .eq('target_user_id', lastSwipe.id)
       .eq('sport', player.sport as any);
     setSwipedIds(prev => { const n = new Set(prev); n.delete(lastSwipe.id); return n; });
+    setTriggerSwipe(null); // cancel stale programmatic swipe so the card doesn't re-fly-out
     setUndoId(lastSwipe.id);
     setUndoDirection(lastSwipe.direction);
     setTimeout(() => { setUndoId(null); setUndoDirection(null); }, 500);

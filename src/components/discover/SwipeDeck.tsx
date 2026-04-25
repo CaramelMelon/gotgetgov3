@@ -143,7 +143,7 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, undoDire
   // Tracks IDs being rewound so in-flight animations don't re-dismiss them
   const pendingUndoRef = useRef<Set<string>>(new Set());
 
-  // Undo: remove from dismissed, block re-dismiss from in-flight animation, play rewind animation
+  // Undo: remove from dismissed, cancel in-flight programmatic swipe, play rewind animation
   useEffect(() => {
     if (undoId) {
       pendingUndoRef.current.add(undoId);
@@ -152,6 +152,8 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, undoDire
         next.delete(undoId);
         return next;
       });
+      // Cancel any programmatic swipe for this card so it doesn't re-fly-out on reappearance
+      setProgramSwipe(null);
       const screenW = window.innerWidth;
       const fromX = undoDirection === 'right' ? screenW * 1.5 : -screenW * 1.5;
       setRewindCard({ id: undoId, fromX });
