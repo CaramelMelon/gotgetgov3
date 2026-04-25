@@ -2,13 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { SPORTS, type SportType } from '@/types';
-import { cn } from '@/lib/utils';
 import { getInitials } from '@/lib/avatar-utils';
 
 type GroupType = 'circle' | 'team';
@@ -167,79 +164,106 @@ export function CreateCirclePage() {
     }
   };
 
+  // ─── shared style helpers ────────────────────────────────────────────────────
+  const fieldLabel: React.CSSProperties = {
+    display: 'block', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+    color: 'var(--color-t1)', marginBottom: 8,
+  };
+  const pill = (active: boolean): React.CSSProperties => ({
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    padding: '12px 0', borderRadius: 'var(--radius-full)',
+    fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+    border: 'none', cursor: 'pointer',
+    background: active ? 'var(--color-acc)' : 'var(--color-surf-2)',
+    color: active ? '#fff' : 'var(--color-t2)',
+    transition: 'background 0.15s, color 0.15s',
+  });
+  const chip = (active: boolean): React.CSSProperties => ({
+    padding: '8px 16px', borderRadius: 'var(--radius-full)',
+    fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+    border: active ? 'none' : '1px solid var(--color-bdr)',
+    cursor: 'pointer',
+    background: active ? 'var(--color-acc)' : 'var(--color-surf-2)',
+    color: active ? '#fff' : 'var(--color-t2)',
+    transition: 'background 0.15s',
+  });
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '12px 14px',
+    borderRadius: 'var(--radius-xl)',
+    fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t1)',
+    background: 'var(--color-surf-2)',
+    border: '1px solid var(--color-bdr)',
+    outline: 'none', boxSizing: 'border-box',
+  };
+  const caption: React.CSSProperties = {
+    fontFamily: 'var(--font-body)', fontSize: 12,
+    color: 'var(--color-t3)', marginTop: 6,
+  };
+
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-surf)' }}>
-      <div className="sticky top-0 z-10 safe-top" style={{ background: 'var(--color-surf)', borderBottom: '1px solid var(--color-bdr)' }}>
-        <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <button
-            onClick={handleBack}
-            className="p-2 -ml-2"
-            style={{ color: 'var(--color-t2)' }}
-          >
-            <X className="w-6 h-6" />
+    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'var(--color-bg)', borderBottom: '1px solid var(--color-bdr)',
+        paddingTop: 'max(8px, env(safe-area-inset-top, 8px))',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px var(--space-5)', maxWidth: 480, margin: '0 auto' }}>
+          <button onClick={handleBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, marginLeft: -8, color: 'var(--color-t2)', display: 'flex' }}>
+            <X size={22} />
           </button>
-          <h1 className="text-h3 font-bold" style={{ color: 'var(--color-t1)' }}>Create Circle / Team</h1>
-          <div className="w-10" />
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--color-t1)', margin: 0 }}>Create Circle / Team</h1>
+          <div style={{ width: 38 }} />
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6 max-w-lg mx-auto">
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-5)', maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+        {/* Name */}
         <div>
-          <label className="block text-label font-medium mb-2" style={{ color: 'var(--color-t1)' }}>
-            Name *
-          </label>
-          <Input
+          <label style={fieldLabel}>Name *</label>
+          <input
             placeholder={groupType === 'circle' ? 'e.g. Tuesday Night Crew' : 'e.g. Smith & Jones'}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            style={inputStyle}
           />
         </div>
 
+        {/* Type */}
         <div>
-          <label className="block text-label font-medium mb-2" style={{ color: 'var(--color-t1)' }}>
-            Type *
-          </label>
-          <div className="flex gap-2">
+          <label style={fieldLabel}>Type *</label>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => { setGroupType('circle'); setInvitedMembers(invitedMembers.slice(0, 10)); }}
-              className="flex-1 py-3 rounded-[8px] text-label font-medium transition-colors"
-              style={groupType === 'circle'
-                ? { background: 'var(--color-acc)', color: '#fff' }
-                : { background: '#f3f4f6', color: 'var(--color-t2)' }}
+              style={pill(groupType === 'circle')}
             >
               Circle
             </button>
             <button
               onClick={() => { setGroupType('team'); setInvitedMembers(invitedMembers.slice(0, 1)); }}
-              className="flex-1 py-3 rounded-[8px] text-label font-medium transition-colors"
-              style={groupType === 'team'
-                ? { background: 'var(--color-acc)', color: '#fff' }
-                : { background: '#f3f4f6', color: 'var(--color-t2)' }}
+              style={pill(groupType === 'team')}
             >
               Team
             </button>
           </div>
-          <p className="text-caption mt-2" style={{ color: 'var(--color-t3)' }}>
+          <p style={caption}>
             {groupType === 'circle'
               ? 'A group for organizing play sessions with multiple people.'
               : 'A doubles pair for competing together.'}
           </p>
         </div>
 
+        {/* Sport (for teams) */}
         {groupType === 'team' && (
           <div>
-            <label className="block text-label font-medium mb-2" style={{ color: 'var(--color-t1)' }}>
-              Sport *
-            </label>
-            <div className="flex flex-wrap gap-2">
+            <label style={fieldLabel}>Sport *</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {userSports.map((sport) => (
                 <button
                   key={sport}
                   onClick={() => setSelectedSport(sport)}
-                  className="px-4 py-2 rounded-full text-label font-medium transition-colors"
-                  style={selectedSport === sport
-                    ? { background: 'var(--color-acc)', color: '#fff' }
-                    : { background: '#f3f4f6', color: 'var(--color-t2)' }}
+                  style={chip(selectedSport === sport)}
                 >
                   {SPORTS[sport]?.name || sport}
                 </button>
@@ -248,109 +272,89 @@ export function CreateCirclePage() {
           </div>
         )}
 
+        {/* Invite Members */}
         <div>
-          <label className="block text-label font-medium mb-2" style={{ color: 'var(--color-t1)' }}>
-            Invite Members (Optional)
-          </label>
-          <div className="flex flex-wrap items-center gap-3">
+          <label style={fieldLabel}>Invite Members (Optional)</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {invitedMembers.map((member) => (
-              <div key={member.id} className="relative group">
-                <button
-                  onClick={() => {}}
-                  className="flex flex-col items-center gap-1"
-                >
-                  <div className="relative">
-                    <Avatar size="lg">
-                      <AvatarImage src={member.avatarUrl} />
-                      <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
-                    </Avatar>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeMember(member.id); }}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  </div>
-                  <span className="text-caption max-w-[64px] truncate" style={{ color: 'var(--color-t2)' }}>
-                    {member.name.split(' ')[0]}
-                  </span>
+              <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 'var(--radius-xl)', background: 'var(--color-surf-2)' }}>
+                <PlayerAvatar name={member.name} avatarUrl={member.avatarUrl} size={34} />
+                <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t1)' }}>{member.name}</span>
+                <button onClick={() => removeMember(member.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-t3)', padding: 4, display: 'flex' }}>
+                  <X size={16} />
                 </button>
               </div>
             ))}
             <button
               onClick={() => setShowMemberPicker(true)}
-              className="flex flex-col items-center gap-1"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderRadius: 'var(--radius-xl)', border: '1.5px dashed var(--color-bdr)', background: 'none', color: 'var(--color-t3)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14 }}
             >
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
-                style={{ border: '2px dashed var(--color-bdr)', color: 'var(--color-t3)' }}
-              >
-                <Plus className="w-6 h-6" />
-              </div>
-              <span className="text-caption" style={{ color: 'var(--color-t3)' }}>Invite</span>
+              <Plus size={18} /> Invite
             </button>
           </div>
         </div>
 
-        <Button
+        {/* Submit */}
+        <button
           onClick={handleSubmit}
           disabled={!canSubmit || isSubmitting}
-          className="w-full"
+          style={{
+            width: '100%', padding: '15px', borderRadius: 'var(--radius-full)',
+            border: 'none', cursor: canSubmit && !isSubmitting ? 'pointer' : 'not-allowed',
+            fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 700,
+            background: canSubmit && !isSubmitting ? 'var(--color-acc)' : 'var(--color-surf-2)',
+            color: canSubmit && !isSubmitting ? '#fff' : 'var(--color-t3)',
+            transition: 'background 0.15s',
+            boxShadow: canSubmit && !isSubmitting ? '0 4px 16px rgba(22,212,106,0.3)' : 'none',
+          }}
         >
           {isSubmitting ? 'Creating...' : 'Create'}
-        </Button>
+        </button>
+
+        <div style={{ height: 'max(16px, env(safe-area-inset-bottom, 16px))' }} />
       </div>
 
+      {/* Member Picker sheet */}
       <AnimatePresence>
         {showMemberPicker && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }}
               onClick={() => setShowMemberPicker(false)}
             />
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[16px] max-h-[70vh] overflow-hidden"
-              style={{ background: 'var(--color-surf)' }}
+              style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, borderRadius: '20px 20px 0 0', maxHeight: '70dvh', overflow: 'hidden', background: 'var(--color-surf)', display: 'flex', flexDirection: 'column' }}
             >
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 rounded-full" style={{ background: 'var(--color-bdr)' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-bdr-s)' }} />
               </div>
-              <div className="px-4 pb-4">
-                <h3 className="text-h3 font-bold mb-4" style={{ color: 'var(--color-t1)' }}>
-                  Select Members
-                </h3>
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--color-t3)' }} />
-                  <Input
+              <div style={{ padding: '0 var(--space-5) var(--space-5)', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--color-t1)', margin: 0 }}>Select Members</h3>
+                <div style={{ position: 'relative' }}>
+                  <Search size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-t3)', pointerEvents: 'none' }} />
+                  <input
                     placeholder="Search connections..."
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
-                    className="pl-10"
+                    style={{ ...inputStyle, paddingLeft: 40 }}
                   />
                 </div>
-                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', maxHeight: '40dvh' }}>
                   {filteredConnections.length === 0 ? (
-                    <p className="text-center py-8" style={{ color: 'var(--color-t3)' }}>No connections found</p>
+                    <p style={{ textAlign: 'center', padding: '32px 0', fontFamily: 'var(--font-body)', color: 'var(--color-t3)' }}>No connections found</p>
                   ) : (
                     filteredConnections.map((connection) => (
                       <button
                         key={connection.id}
                         onClick={() => selectMember(connection)}
-                        className="w-full flex items-center gap-3 p-3 rounded-[8px] transition-colors hover:opacity-80"
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--radius-xl)', border: 'none', background: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
                       >
-                        <Avatar>
-                          <AvatarImage src={connection.avatarUrl} />
-                          <AvatarFallback>{getInitials(connection.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 text-left">
-                          <p className="text-label font-medium" style={{ color: 'var(--color-t1)' }}>{connection.name}</p>
+                        <PlayerAvatar name={connection.name} avatarUrl={connection.avatarUrl} size={38} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--color-t1)', margin: 0 }}>{connection.name}</p>
                         </div>
                       </button>
                     ))
@@ -361,6 +365,25 @@ export function CreateCirclePage() {
           </>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Small avatar helper ───────────────────────────────────────────────────────
+function PlayerAvatar({ name, avatarUrl, size }: { name: string; avatarUrl?: string; size: number }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: 'var(--color-acc-bg)', overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: size * 0.35, fontWeight: 700, color: 'var(--color-acc)' }}>
+          {getInitials(name)}
+        </span>
+      )}
     </div>
   );
 }

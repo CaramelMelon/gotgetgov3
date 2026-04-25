@@ -27,8 +27,7 @@ interface AppShellProps {
 function AppShellContent({ children }: AppShellProps) {
   const navigate = useNavigate();
   const { user, profile, isGuest, signOut } = useAuth();
-  const { theme } = useThemeContext();
-  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const logoSrc = '/GotGetGo Logo.png';
   const { updateFilters } = useFilters();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);

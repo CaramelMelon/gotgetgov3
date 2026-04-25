@@ -44,8 +44,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const { enterGuestMode } = useAuth();
   const { startTutorial } = useGuestTutorial();
-  const { theme } = useThemeContext();
-  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const logoSrc = '/GotGetGo Logo.png';
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
@@ -94,6 +93,7 @@ export function LandingPage() {
           margin: '0 auto',
           paddingLeft: isDesktop ? 48 : 24,
           paddingRight: isDesktop ? 48 : 24,
+          justifyContent: isDesktop ? 'flex-start' : 'center',
         }}
       >
         {isDesktop ? (
@@ -202,12 +202,12 @@ export function LandingPage() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="flex-1 flex flex-col justify-center"
-              style={{ paddingTop: 80, paddingBottom: 24 }}
+              className="flex flex-col"
+              style={{ paddingTop: 24, paddingBottom: 12 }}
             >
               {/* Logo + wordmark */}
-              <motion.div variants={itemVariants} className="flex flex-col items-start" style={{ marginBottom: 32 }}>
-                <div className="relative" style={{ marginBottom: 24 }}>
+              <motion.div variants={itemVariants} className="flex flex-col items-start" style={{ marginBottom: 20 }}>
+                <div className="relative" style={{ marginBottom: 16 }}>
                   <div style={{
                     position: 'absolute', inset: '-40px',
                     background: 'radial-gradient(circle, rgba(22,212,106,0.4) 0%, rgba(22,212,106,0.15) 40%, transparent 70%)',
@@ -217,14 +217,14 @@ export function LandingPage() {
                     src={logoSrc}
                     alt="GotGetGo"
                     className="relative object-contain"
-                    style={{ width: 80, height: 80, filter: 'drop-shadow(0 0 12px rgba(22,212,106,0.5))' }}
+                    style={{ width: 64, height: 64, filter: 'drop-shadow(0 0 12px rgba(22,212,106,0.5))' }}
                   />
                 </div>
 
                 <h1 style={{
                   fontFamily: 'var(--font-display)',
                   fontWeight: 400,
-                  fontSize: 'clamp(3rem, 16vw, 5rem)',
+                  fontSize: 'clamp(2.5rem, 14vw, 4rem)',
                   color: 'var(--color-t1)',
                   letterSpacing: '-0.02em',
                   lineHeight: 1.1,
@@ -234,25 +234,25 @@ export function LandingPage() {
                 </h1>
 
                 <p style={{
-                  fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 16,
-                  color: 'var(--color-t2)', marginTop: 8, textAlign: 'left',
+                  fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 15,
+                  color: 'var(--color-t2)', marginTop: 6, textAlign: 'left',
                 }}>
                   Find opponents. Play matches. Climb ladders.
                 </p>
               </motion.div>
 
               {/* Divider */}
-              <motion.div variants={itemVariants} className="lp-divider" style={{ marginBottom: 32 }} />
+              <motion.div variants={itemVariants} className="lp-divider" style={{ marginBottom: 20 }} />
 
               {/* Feature cards */}
               <motion.div variants={itemVariants}>
                 <p style={{
-                  fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-                  letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-t3)', marginBottom: 8,
+                  fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600,
+                  letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-t3)', marginBottom: 6,
                 }}>
                   Built for racquet players
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {features.map((f, i) => (
                     <motion.div
                       key={i}
@@ -261,16 +261,16 @@ export function LandingPage() {
                       initial="hidden"
                       animate="visible"
                     >
-                      <Card style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 16px' }}>
+                      <Card style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px' }}>
                         <div style={{
-                          width: 32, height: 32, borderRadius: '50%',
+                          width: 28, height: 28, borderRadius: '50%',
                           background: 'var(--color-acc-bg)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                         }}>
-                          <f.icon size={16} strokeWidth={2} style={{ color: 'var(--color-acc)' } as React.CSSProperties} />
+                          <f.icon size={14} strokeWidth={2} style={{ color: 'var(--color-acc)' } as React.CSSProperties} />
                         </div>
                         <span style={{
-                          fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--color-t1)',
+                          fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--color-t1)',
                         }}>
                           {f.label}
                         </span>
@@ -287,12 +287,12 @@ export function LandingPage() {
               variants={heroVariants}
               initial="hidden"
               animate="visible"
-              style={{ paddingBottom: 48 }}
+              style={{ paddingTop: 16, paddingBottom: 32 }}
             >
               <Button
                 variant="outline"
                 size="lg"
-                style={{ width: '100%', marginBottom: 12 }}
+                style={{ width: '100%', marginBottom: 10 }}
                 onClick={() => { enterGuestMode(); startTutorial(); navigate('/discover'); }}
               >
                 Continue as Guest
@@ -307,7 +307,7 @@ export function LandingPage() {
                 Get Started
               </Button>
 
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--color-t2)', textAlign: 'center', marginTop: 24 }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', textAlign: 'center', marginTop: 16 }}>
                 Already have an account?{' '}
                 <button
                   onClick={() => { setAuthMode('signin'); setShowAuth(true); }}
