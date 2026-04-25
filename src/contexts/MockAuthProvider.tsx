@@ -12,6 +12,9 @@ export function MockAuthProvider({ children }: { children: ReactNode }) {
     signUp: async () => ({ error: null }),
     signIn: async () => ({ error: null }),
     signInWithGoogle: async () => ({ error: null }),
+    signInWithApple: async () => ({ error: null }),
+    signInWithPhone: async () => ({ error: null }),
+    verifyPhoneOtp: async () => ({ error: null }),
     signOut: async () => {},
     updateProfile: async () => ({ error: null }),
   };

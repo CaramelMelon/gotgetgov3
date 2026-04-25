@@ -131,6 +131,9 @@ function TestWrapper({ children, user = mockUser, profile = mockProfile }: any) 
           signUp: vi.fn(),
           signIn: vi.fn(),
           signInWithGoogle: vi.fn(),
+          signInWithApple: vi.fn(),
+          signInWithPhone: vi.fn(),
+          verifyPhoneOtp: vi.fn(),
           signOut: vi.fn(),
           updateProfile: vi.fn(),
         }}
