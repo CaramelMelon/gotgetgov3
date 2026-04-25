@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, Clock, MapPin,
+  CalendarDays, MapPin,
   ChevronLeft, ChevronRight, X, CheckCircle2,
 } from 'lucide-react';
 import {
@@ -368,25 +368,21 @@ export function SchedulePage() {
           </h1>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          {/* Manage Availability button */}
-          <button
-            onClick={() => setAvailabilityModalOpen(true)}
-            style={{
-              width: 42, height: 42,
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--color-surf)',
-              border: '1px solid var(--color-bdr)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-            }}
-            aria-label="Manage availability"
-          >
-            <Clock size={19} style={{ color: 'var(--color-t2)' }} />
-          </button>
-        </div>
+        <button
+          onClick={() => setAvailabilityModalOpen(true)}
+          style={{
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-surf)',
+            border: '1px solid var(--color-bdr)',
+            cursor: 'pointer', flexShrink: 0,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            fontFamily: 'var(--font-body)', fontWeight: 600,
+            fontSize: 13, color: 'var(--color-t1)',
+          }}
+        >
+          Set Availability
+        </button>
       </div>
 
       {/* ── Calendar Connect Banner ───────────────────────────────────────── */}
