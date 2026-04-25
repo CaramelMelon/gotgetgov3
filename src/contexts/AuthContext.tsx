@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../types/database';
-import { IS_MOCK } from './MockModeContext';
+import { isMockPath } from './MockModeContext';
 import { MOCK_AUTH_USER, MOCK_AUTH_PROFILE } from '../data/mockDemoData';
 
 interface AuthContextType {
@@ -10,16 +10,11 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  isGuest: boolean;
-  guestSwipeCount: number;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
-  enterGuestMode: () => void;
-  exitGuestMode: () => void;
-  incrementGuestSwipeCount: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,17 +22,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export { AuthContext };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => IS_MOCK ? MOCK_AUTH_USER : null);
-  const [profile, setProfile] = useState<Profile | null>(() => IS_MOCK ? MOCK_AUTH_PROFILE : null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(!IS_MOCK);
-  const [isGuest, setIsGuest] = useState<boolean>(() =>
-    localStorage.getItem('gg-guest') === 'true'
-  );
-  const [guestSwipeCount, setGuestSwipeCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (IS_MOCK) return;
 
     // Track whether we've already bootstrapped to avoid firing twice:
     // getSession() fires first, then onAuthStateChange('INITIAL_SESSION') also fires.
@@ -91,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Heartbeat: keep last_seen fresh every 2 minutes while logged in
   useEffect(() => {
-    if (!user || IS_MOCK) return;
+    if (!user || user.id === MOCK_AUTH_USER.id) return;
     const tick = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('profiles') as any)
@@ -123,13 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { full_name: fullName } },
     });
-    if (!error) exitGuestMode();
     return { error: error as Error | null };
   }
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) exitGuestMode();
     return { error: error as Error | null };
   }
 
@@ -138,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (!error) exitGuestMode();
     return { error: error as Error | null };
   }
 
@@ -164,36 +151,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   }
 
-  function enterGuestMode() {
-    localStorage.setItem('gg-guest', 'true');
-    setIsGuest(true);
-  }
-
-  function exitGuestMode() {
-    localStorage.removeItem('gg-guest');
-    setIsGuest(false);
-    setGuestSwipeCount(0);
-  }
-
-  function incrementGuestSwipeCount() {
-    setGuestSwipeCount((prev) => prev + 1);
-  }
-
   const value = {
     user,
     profile,
     session,
     loading,
-    isGuest,
-    guestSwipeCount,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
     updateProfile,
-    enterGuestMode,
-    exitGuestMode,
-    incrementGuestSwipeCount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

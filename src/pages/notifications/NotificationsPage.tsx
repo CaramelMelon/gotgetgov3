@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGuestTutorial } from '@/contexts/GuestTutorialContext';
 import { useMockMode } from '@/contexts/MockModeContext';
 import { MOCK_NOTIFICATIONS } from '@/data/mockDemoData';
 import { supabase } from '@/lib/supabase';
@@ -404,123 +403,16 @@ function GroupLabel({ label }: { label: string }) {
   );
 }
 
-// ─── Tutorial connection card (guest mode only) ───────────────────────────────
-
-function TutorialConnectionCard() {
-  const navigate = useNavigate();
-  const { tutorialStep, advanceTutorial, registerTarget } = useGuestTutorial();
-  const [accepted, setAccepted] = useState(tutorialStep === 'go_to_messages');
-
-  // Callback ref fires synchronously on attach/detach — no async timing issues
-  const acceptBtnRef = useCallback((el: HTMLButtonElement | null) => {
-    registerTarget('accept_connection', el);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (tutorialStep !== 'accept_connection' && tutorialStep !== 'go_to_messages') return null;
-
-  return (
-    <div
-      style={{
-        background: 'var(--color-surf)',
-        border: '1px solid var(--color-bdr)',
-        borderRadius: 16,
-        padding: '14px 16px',
-        marginBottom: 8,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        {/* Avatar bubble */}
-        <div style={{
-          width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-          background: 'var(--color-acc-bg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15,
-          color: 'var(--color-acc)',
-        }}>
-          ER
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 2 }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', margin: 0, lineHeight: 1.4 }}>
-              <span style={{ fontWeight: 700, color: 'var(--color-t1)' }}>Emma Rodriguez</span> swiped right on you
-            </p>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--color-t3)', whiteSpace: 'nowrap' }}>
-              Just now
-            </span>
-          </div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-t3)', margin: '2px 0 10px' }}>
-            Interested in playing Tennis
-          </p>
-          {accepted ? (
-            <div>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-acc)', fontWeight: 600, margin: '0 0 10px' }}>
-                ✅ Connected! You can now message Emma.
-              </p>
-              <button
-                onClick={() => navigate('/circles')}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'var(--color-acc)', color: '#fff',
-                  border: 'none', borderRadius: 999,
-                  padding: '8px 16px', cursor: 'pointer',
-                  fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13,
-                }}
-              >
-                <MessageCircle size={14} />
-                Send Message
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                ref={acceptBtnRef}
-                onClick={() => { setAccepted(true); advanceTutorial('go_to_messages'); }}
-                style={{
-                  background: 'var(--color-acc)', color: '#fff',
-                  border: 'none', borderRadius: 999,
-                  padding: '8px 16px', cursor: 'pointer',
-                  fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13,
-                }}
-              >
-                Accept
-              </button>
-              <button
-                style={{
-                  background: 'none', color: 'var(--color-t2)',
-                  border: '1px solid var(--color-bdr)', borderRadius: 999,
-                  padding: '8px 16px', cursor: 'pointer',
-                  fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
-                }}
-                disabled
-              >
-                Reject
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function NotificationsPage() {
-  const { user, isGuest } = useAuth();
-  const { tutorialStep, advanceTutorial } = useGuestTutorial();
+  const { user } = useAuth();
   const isMockMode = useMockMode();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(() => isMockMode ? MOCK_NOTIFICATIONS : []);
-  const [loading, setLoading] = useState(!isGuest && !isMockMode);
+  const [loading, setLoading] = useState(!isMockMode);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [tab, setTab] = useState<FilterTab>('all');
-
-  // Tutorial: auto-advance when user arrives on this page
-  useEffect(() => {
-    if (isGuest && tutorialStep === 'go_to_notifications') {
-      advanceTutorial('accept_connection');
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isMockMode || !user?.id) return;
@@ -533,7 +425,7 @@ export function NotificationsPage() {
       })
       .subscribe();
     return () => { clearTimeout(timer); channel.unsubscribe(); };
-  }, [user?.id]);
+  }, [user?.id, isMockMode]);
 
   async function fetchNotifications() {
     if (!user?.id) return;
@@ -666,16 +558,8 @@ export function NotificationsPage() {
           })}
         </div>
 
-        {/* ── Tutorial card (guest mode) ───────────────────────────────────── */}
-        {isGuest && (
-          <>
-            <GroupLabel label="Today" />
-            <TutorialConnectionCard />
-          </>
-        )}
-
         {/* ── Empty state ──────────────────────────────────────────────────── */}
-        {filtered.length === 0 && !isGuest && (
+        {filtered.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 0 32px', gap: 12 }}>
             <div style={{
               width: 60, height: 60, borderRadius: 18, background: 'var(--color-surf)',

@@ -2,11 +2,10 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { GuestTutorialProvider } from './contexts/GuestTutorialContext';
-import { TutorialSpotlight } from './components/tutorial/TutorialSpotlight';
 import { FilterProvider } from './contexts/FilterContext';
 import { FullscreenProvider } from './contexts/FullscreenContext';
-import { MockModeProvider, IS_MOCK } from './contexts/MockModeContext';
+import { MockModeProvider } from './contexts/MockModeContext';
+import { MockAuthProvider } from './contexts/MockAuthProvider';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
 import { PublicRoute } from './components/routing/PublicRoute';
@@ -43,8 +42,7 @@ import {
 
 function MockEntry() {
   useEffect(() => {
-    sessionStorage.setItem('gg-mock', 'true');
-    window.location.replace('/discover');
+    window.location.replace('/mock/discover');
   }, []);
   return (
     <div style={{
@@ -91,8 +89,17 @@ function AppRoutes() {
       <Route path="/announcement/new"    element={<ProtectedRoute><CreateAnnouncementPage /></ProtectedRoute>} />
       <Route path="/:type/:id/edit"      element={<ProtectedRoute><EditCirclePage /></ProtectedRoute>} />
 
-      {/* Mock demo entry — sets flag then reloads to /discover */}
+      {/* Mock demo entry — redirects to /mock/discover */}
       <Route path="/mock" element={<MockEntry />} />
+
+      {/* Mock sub-routes — mock mode derived from URL, no sessionStorage needed */}
+      <Route path="/mock/discover"      element={<MockAuthProvider><AppShell><DiscoverPage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/news"          element={<MockAuthProvider><AppShell><NewsPage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/schedule"      element={<MockAuthProvider><AppShell><SchedulePage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/results"       element={<MockAuthProvider><AppShell><ResultsPage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/circles"       element={<MockAuthProvider><AppShell><CirclesPage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/profile"       element={<MockAuthProvider><AppShell><ProfilePage /></AppShell></MockAuthProvider>} />
+      <Route path="/mock/notifications" element={<MockAuthProvider><AppShell><NotificationsPage /></AppShell></MockAuthProvider>} />
 
       {/* Fallbacks */}
       <Route path="/" element={<Navigate to="/discover" replace />} />
@@ -107,14 +114,11 @@ export default function App() {
       <ThemeProvider>
         <MockModeProvider>
           <AuthProvider>
-            <GuestTutorialProvider>
-              <FilterProvider>
-                <FullscreenProvider>
-                  <AppRoutes />
-                  <TutorialSpotlight />
-                </FullscreenProvider>
-              </FilterProvider>
-            </GuestTutorialProvider>
+            <FilterProvider>
+              <FullscreenProvider>
+                <AppRoutes />
+              </FullscreenProvider>
+            </FilterProvider>
           </AuthProvider>
         </MockModeProvider>
       </ThemeProvider>

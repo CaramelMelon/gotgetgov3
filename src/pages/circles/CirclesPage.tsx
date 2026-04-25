@@ -9,11 +9,9 @@ import { MatchesView } from './MatchesView';
 import { CirclesView } from './CirclesView';
 import { useConversations } from '../../hooks/useConversations';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { useNavVisibility } from '../../contexts/NavVisibilityContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { getOrCreateDirectConversation } from '../../lib/messaging';
-import { EMMA_CONVERSATION_ITEM } from '../../data/emmaDemoProfile';
 import { SegmentedControl } from '../../components/circles';
 import type { CirclesScreen, ConversationItem } from '../../types/circles';
 import type { Profile } from '../../types/database';
@@ -31,7 +29,7 @@ import {
   clearFeedCache,
 } from '../../api/feed-api';
 import { logError } from '../../lib/error-logging';
-import { IS_MOCK } from '../../contexts/MockModeContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 import { MOCK_HERO_MATCH, MOCK_FEED_CHALLENGES, MOCK_FEED_OPEN_MATCHES, MOCK_CONVERSATIONS } from '../../data/mockDemoData';
 
 // ─── Framer Motion transition variants ───────────────────────────────────────
@@ -155,19 +153,19 @@ export function CirclesPage() {
 
   const [screen, setScreen] = useState<CirclesScreen>({ view: 'list' });
   const _realConvs = useConversations();
+  const isMock = useMockMode();
   const [mockConvs, setMockConvs] = useState(MOCK_CONVERSATIONS);
-  const conversations = IS_MOCK ? mockConvs : _realConvs.conversations;
-  const loading = IS_MOCK ? false : _realConvs.loading;
-  const error = IS_MOCK ? null : _realConvs.error;
-  const markAsRead = IS_MOCK
+  const conversations = isMock ? mockConvs : _realConvs.conversations;
+  const loading = isMock ? false : _realConvs.loading;
+  const error = isMock ? null : _realConvs.error;
+  const markAsRead = isMock
     ? async (id: string) => { setMockConvs(prev => prev.map(c => c.conversation.id === id ? { ...c, unreadCount: 0 } : c)); }
     : _realConvs.markAsRead;
-  const refetch = IS_MOCK ? async () => {} : _realConvs.refetch;
-  const hasMore = IS_MOCK ? false : _realConvs.hasMore;
-  const loadMore = IS_MOCK ? async () => {} : _realConvs.loadMore;
-  const loadingMore = IS_MOCK ? false : _realConvs.loadingMore;
-  const { user, isGuest } = useAuth();
-  const { tutorialStep, advanceTutorial } = useGuestTutorial();
+  const refetch = isMock ? async () => {} : _realConvs.refetch;
+  const hasMore = isMock ? false : _realConvs.hasMore;
+  const loadMore = isMock ? async () => {} : _realConvs.loadMore;
+  const loadingMore = isMock ? false : _realConvs.loadingMore;
+  const { user } = useAuth();
   const { setHideNav } = useNavVisibility();
   const { isDesktop } = useResponsive();
 
@@ -187,7 +185,7 @@ export function CirclesPage() {
     }
   }, [viewParam, targetConversationId, setHideNav]);
   const [feedData, setFeedData] = useState<FeedData>(() =>
-    IS_MOCK
+    isMock
       ? { heroMatch: MOCK_HERO_MATCH, challenges: MOCK_FEED_CHALLENGES, openMatches: MOCK_FEED_OPEN_MATCHES, weeklyMatches: [], tournaments: [] }
       : { heroMatch: null, challenges: [], openMatches: [], weeklyMatches: [], tournaments: [] }
   );
@@ -315,24 +313,6 @@ export function CirclesPage() {
   // Restore nav when unmounting
   useEffect(() => () => { setHideNav(false); }, [setHideNav]);
 
-  // Tutorial: advance to emma_greeting when page first mounts during go_to_messages step
-  useEffect(() => {
-    if (isGuest && tutorialStep === 'go_to_messages') {
-      advanceTutorial('emma_greeting');
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Tutorial: auto-open Emma's chat once Emma's greeting step is active
-  useEffect(() => {
-    if (!isGuest) return;
-    if ((tutorialStep === 'emma_greeting' || tutorialStep === 'send_message') && screen.view === 'list') {
-      const t = setTimeout(() => {
-        openChat(EMMA_CONVERSATION_ITEM);
-      }, 600);
-      return () => clearTimeout(t);
-    }
-  }, [tutorialStep, screen.view, isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Auto-open a conversation when navigated from invite acceptance or notification
   useEffect(() => {
     const targetId = (location.state as { openConversationId?: string } | null)?.openConversationId;
@@ -393,7 +373,7 @@ export function CirclesPage() {
       return;
     }
 
-    if (IS_MOCK) return;
+    if (isMock) return;
 
     if (!user) {
       // User is not authenticated - show appropriate state

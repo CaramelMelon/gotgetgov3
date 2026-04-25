@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   Avatar,
   IconArrowLeft,
@@ -11,9 +10,8 @@ import { ScheduleOverlapBar } from '../../components/circles/ScheduleOverlapBar'
 import { SuggestTimeSheet } from '../../components/circles/SuggestTimeSheet';
 import { useMessages } from '../../hooks/useMessages';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { EMMA_CONV_ID } from '../../data/emmaDemoProfile';
-import { IS_MOCK, useMockMode } from '../../contexts/MockModeContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 import { MOCK_MESSAGES, MOCK_AUTH_PROFILE } from '../../data/mockDemoData';
 import type { ConversationItem, MessageWithSender, MatchProposalPayload, AttachmentPayload } from '../../types/circles';
 import { MATCH_PROPOSAL_PREFIX, ATTACHMENT_PREFIX } from '../../types/circles';
@@ -87,8 +85,8 @@ interface ChatDetailViewProps {
 
 export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackButton = false }: ChatDetailViewProps) {
   const isDemo = conversationItem.conversation.id === EMMA_CONV_ID;
-  const isMockConv = IS_MOCK && conversationItem.conversation.id.startsWith('conv-');
-  const { tutorialStep, tutorialMessages, addUserMessage, advanceTutorial } = useGuestTutorial();
+  const isMock = useMockMode();
+  const isMockConv = isMock && conversationItem.conversation.id.startsWith('conv-');
   const navigate = useNavigate();
 
   // For demo/mock chat: pass null to skip Supabase calls
@@ -100,7 +98,7 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
     sending: realSending,
   } = useMessages(isDemo || isMockConv ? null : conversationItem.conversation.id);
 
-  const rawMockMsgs = isMockConv ? (MOCK_MESSAGES[conversationItem.conversation.id] ?? []) : [];
+  const rawMockMsgs = (isDemo || isMockConv) ? (MOCK_MESSAGES[conversationItem.conversation.id] ?? []) : [];
   const [mockMsgs, setMockMsgs] = useState<typeof rawMockMsgs>(rawMockMsgs);
 
   const mockMessagesWithSender: MessageWithSender[] = mockMsgs.map(m => ({
@@ -113,7 +111,7 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
     isMine: m.sender_id === 'mock-me',
   }));
 
-  const messages = isDemo ? tutorialMessages : isMockConv ? mockMessagesWithSender : realMessages;
+  const messages = (isDemo || isMockConv) ? mockMessagesWithSender : realMessages;
   const sending = isDemo || isMockConv ? false : realSending;
 
   const { user } = useAuth();
@@ -195,22 +193,26 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
     }
 
     if (isDemo) {
-      if (attachment) {
-        const payload: AttachmentPayload = {
-          type: attachment.type,
-          url: attachment.previewUrl,  // blob URL is fine for the demo session
-          name: attachment.file.name,
-          size: attachment.file.size,
-          mimeType: attachment.file.type,
-          caption: content.trim() || undefined,
-        };
-        addUserMessage(ATTACHMENT_PREFIX + JSON.stringify(payload));
-      } else {
-        addUserMessage(content);
-      }
-      if (tutorialStep === 'send_message') {
-        advanceTutorial('emma_accepts');
-      }
+      if (!content.trim() && !attachment) return;
+      const newMsg = {
+        id: `demo-sent-${Date.now()}`,
+        conversation_id: conversationItem.conversation.id,
+        sender_id: 'mock-me',
+        content: attachment
+          ? ATTACHMENT_PREFIX + JSON.stringify({
+              type: attachment.type,
+              url: attachment.previewUrl,
+              name: attachment.file.name,
+              size: attachment.file.size,
+              mimeType: attachment.file.type,
+              caption: content.trim() || undefined,
+            } satisfies AttachmentPayload)
+          : content.trim(),
+        encrypted_content: null,
+        expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      setMockMsgs(prev => [...prev, newMsg]);
       return;
     }
 
@@ -495,49 +497,6 @@ export function ChatDetailView({ conversationItem, onBack, markAsRead, hideBackB
 
         {renderMessages(messages, handleAcceptProposal, handleAltProposal, handleDeclineProposal)}
       </div>
-
-      {/* ── Tutorial completion banner ────────────────────────────────────── */}
-      {isDemo && tutorialStep === 'complete' && (
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-          style={{
-            margin: '12px 12px 4px',
-            padding: '20px 16px',
-            borderRadius: 18,
-            background: 'rgba(22,212,106,0.10)',
-            border: '1px solid var(--color-acc)',
-            textAlign: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🎾</div>
-          <p style={{
-            fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700,
-            color: 'var(--color-acc)', margin: '0 0 4px',
-          }}>
-            Tutorial Complete!
-          </p>
-          <p style={{
-            fontFamily: 'var(--font-body)', fontSize: 13,
-            color: 'var(--color-t2)', margin: '0 0 16px', lineHeight: 1.45,
-          }}>
-            You know the basics. Ready to find real players?
-          </p>
-          <button
-            onClick={() => navigate('/discover')}
-            style={{
-              background: 'var(--color-acc)', color: '#fff',
-              border: 'none', borderRadius: 999,
-              padding: '11px 28px', cursor: 'pointer',
-              fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14,
-            }}
-          >
-            Start Exploring →
-          </button>
-        </motion.div>
-      )}
 
       {/* ── Composer ─────────────────────────────────────────────────────── */}
       <MessageComposer

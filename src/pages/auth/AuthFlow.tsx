@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { IconArrowLeft } from '../../design-system/icons';
@@ -696,7 +697,7 @@ function SignUpScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
 // ─── AuthFlow (exported) ──────────────────────────────────────────────────────
 
 export function AuthFlow() {
-  const { enterGuestMode: continueAsGuest } = useAuth();
+  const navigate = useNavigate();
   const logoSrc = '/GotGetGo Logo.png';
   const [screen, setScreen] = useState<AuthScreen>('welcome');
   const isCard = screen === 'signin' || screen === 'signup';
@@ -721,7 +722,7 @@ export function AuthFlow() {
             exit="exit"
             style={{ position: 'absolute', inset: 0 }}
           >
-            <WelcomeScreen onNavigate={setScreen} onContinueAsGuest={continueAsGuest} />
+            <WelcomeScreen onNavigate={setScreen} onContinueAsGuest={() => navigate('/mock')} />
           </motion.div>
         )}
 

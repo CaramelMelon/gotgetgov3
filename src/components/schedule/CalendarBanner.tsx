@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CalendarDays, X } from 'lucide-react';
 import { calendarService } from '@/lib/calendar-service';
+import { safeSessionGet, safeSessionSet } from '@/contexts/MockModeContext';
 
 interface CalendarBannerProps {
   onConnected: () => void;
@@ -8,7 +9,7 @@ interface CalendarBannerProps {
 
 export function CalendarBanner({ onConnected }: CalendarBannerProps) {
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem('calendar_banner_dismissed') === 'true'
+    () => safeSessionGet('calendar_banner_dismissed') === 'true'
   );
   const [connecting, setConnecting] = useState(false);
 
@@ -26,7 +27,7 @@ export function CalendarBanner({ onConnected }: CalendarBannerProps) {
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem('calendar_banner_dismissed', 'true');
+    safeSessionSet('calendar_banner_dismissed', 'true');
     setDismissed(true);
   };
 

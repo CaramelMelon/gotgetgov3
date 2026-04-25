@@ -8,7 +8,6 @@ import { ComposeMenu } from '../../components/messaging/ComposeMenu';
 import { CreateGroupModal } from '../../components/messaging/CreateGroupModal';
 import { CreateBroadcastModal } from '../../components/messaging/CreateBroadcastModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { supabase } from '../../lib/supabase';
 import { searchUserById, determineSearchType, formatUserIdForDisplay } from '../../lib/userId';
 import { 
@@ -40,8 +39,7 @@ interface CirclesListViewProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function CirclesListView({ conversations, loading, error, onOpenChat, onNewChat, scrollContainerRef, hasMore, loadMore, loadingMore, selectedConversationId }: CirclesListViewProps) {
-  const { profile, isGuest } = useAuth();
-  const { tutorialStep } = useGuestTutorial();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<CirclesTab>('dms');
   const [searchQuery, setSearchQuery] = useState('');
   const [showComposeMenu, setShowComposeMenu] = useState(false);
@@ -125,13 +123,8 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
   const q = searchQuery.trim().toLowerCase();
   const isIdSearch = searchQuery.trim().startsWith('#');
 
-  // Tutorial: inject Emma DM when in relevant tutorial steps
-  const EMMA_TUTORIAL_STEPS = ['go_to_messages', 'emma_greeting', 'send_message', 'emma_accepts', 'complete'];
-  const showEmmaDM = isGuest && EMMA_TUTORIAL_STEPS.includes(tutorialStep);
-
   // Tab-based conversation split
-  const dmConvosBase = conversations.filter((c) => c.conversation.type === 'direct' && c.conversation.id !== EMMA_CONV_ID);
-  const dmConvos    = showEmmaDM ? [EMMA_CONVERSATION_ITEM, ...dmConvosBase] : dmConvosBase;
+  const dmConvos = conversations.filter((c) => c.conversation.type === 'direct');
   const groupConvos = conversations.filter((c) => c.conversation.type !== 'direct');
   const tabConvos   = activeTab === 'dms' ? dmConvos : activeTab === 'groups' ? groupConvos : [];
 
@@ -347,7 +340,7 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
                     </p>
                     {idResult.location_city && (
                       <p style={{ margin: '2px 0 0', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--color-t3)' }}>
-                        📍 {idResult.location_city}
+                        {idResult.location_city}
                       </p>
                     )}
                   </div>
@@ -383,7 +376,6 @@ export function CirclesListView({ conversations, loading, error, onOpenChat, onN
 
             {!idSearching && idNotFound && searchQuery.trim().length >= 3 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 32px', gap: 8 }}>
-                <span style={{ fontSize: 36 }}>🔍</span>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t2)', textAlign: 'center', margin: 0 }}>
                   No player found with that ID.
                 </p>
@@ -728,10 +720,12 @@ function SkeletonList() {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasSearch, tab }: { hasSearch: boolean; tab?: CirclesTab }) {
-  const emoji = tab === 'groups' ? '👥' : '💬';
   const blankMsg = tab === 'groups'
-    ? 'No group chats yet.\nCreate one with the ✏️ button above.'
+    ? 'No group chats yet.\nCreate one with the button above.'
     : 'No circles yet.\nConnect with players on Discover.';
+  
+  const showDiscoverButton = !hasSearch && tab !== 'groups';
+  
   return (
     <div
       style={{
@@ -741,10 +735,9 @@ function EmptyState({ hasSearch, tab }: { hasSearch: boolean; tab?: CirclesTab }
         alignItems: 'center',
         justifyContent: 'center',
         padding: '48px 32px',
-        gap: 10,
+        gap: 16,
       }}
     >
-      <span style={{ fontSize: 40 }}>{emoji}</span>
       <p
         style={{
           fontFamily: 'var(--font-body)',
@@ -758,6 +751,37 @@ function EmptyState({ hasSearch, tab }: { hasSearch: boolean; tab?: CirclesTab }
       >
         {hasSearch ? 'No conversations match your search.' : blankMsg}
       </p>
+      {showDiscoverButton && (
+        <a
+          href="/discover"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '10px 20px',
+            borderRadius: 10,
+            background: 'var(--color-acc)',
+            color: '#fff',
+            fontFamily: 'var(--font-body)',
+            fontSize: 14,
+            fontWeight: 600,
+            textDecoration: 'none',
+            cursor: 'pointer',
+            border: 'none',
+            transition: 'transform 0.15s, box-shadow 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          Go to Discover
+        </a>
+      )}
     </div>
   );
 }

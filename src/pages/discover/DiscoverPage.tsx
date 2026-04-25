@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { useMockMode } from '../../contexts/MockModeContext';
 import { supabase } from '../../lib/supabase';
 import { haversineKm } from '../../lib/haversine';
@@ -11,7 +10,6 @@ import type { FilterTriptychHandle } from '../../components/layout/FilterTriptyc
 import { InteractionBar } from '../../components/discover/InteractionBar';
 import { SwipeDeck } from '../../components/discover/SwipeDeck';
 import { DiscoverSkeleton } from '../../components/skeletons';
-import { EMMA_DISCOVER_PLAYER, EMMA_USER_ID } from '../../data/emmaDemoProfile';
 import { MOCK_PLAYERS } from '../../data/mockDemoData';
 import type { DiscoverPlayer, FilterSport, FilterSkill, MatchRecord } from '../../types/discover';
 import type { SportType } from '../../types/index';
@@ -60,8 +58,7 @@ function formatDate(iso: string): string {
 const TEN_MINUTES = 10 * 60 * 1000;
 
 export function DiscoverPage() {
-  const { user, profile, isGuest } = useAuth();
-  const { tutorialStep, advanceTutorial, registerTarget, resetTutorial } = useGuestTutorial();
+  const { user, profile } = useAuth();
   const isMockMode = useMockMode();
   const isDesktop = useIsDesktop();
   const deckRef = useRef<HTMLDivElement>(null);
@@ -218,15 +215,6 @@ export function DiscoverPage() {
   }, [players, swipedIds, matchCache]);
 
   const handleSwipeRight = useCallback(async (id: string) => {
-    // Tutorial: intercept Emma's card swipe
-    if (id === EMMA_USER_ID) {
-      setSwipedIds(prev => new Set([...prev, id]));
-      setLastSwipe({ id, direction: 'right' });
-      setTriggerSwipe({ id, direction: 'right' });
-      setTimeout(() => setTriggerSwipe(null), 400);
-      advanceTutorial('go_to_notifications');
-      return;
-    }
     setSwipedIds(prev => new Set([...prev, id]));
     setLastSwipe({ id, direction: 'right' });
     setTriggerSwipe({ id, direction: 'right' });
@@ -237,7 +225,7 @@ export function DiscoverPage() {
     await (supabase.from('swipe_matches') as any).upsert({
       user_id: user.id, target_user_id: id, sport: player.sport, direction: 'right',
     }, { onConflict: 'user_id,target_user_id,sport' });
-  }, [players, user, advanceTutorial, isMockMode]);
+  }, [players, user, isMockMode]);
 
   const handleSwipeLeft = useCallback(async (id: string) => {
     setSwipedIds(prev => new Set([...prev, id]));
@@ -303,22 +291,8 @@ export function DiscoverPage() {
     }
   }, [players, swipedIds, user]);
 
-  // Register deck container as spotlight target for swipe_card step
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (tutorialStep === 'swipe_card') {
-      registerTarget('swipe_card', deckRef.current);
-    }
-    return () => {
-      if (tutorialStep === 'swipe_card') registerTarget('swipe_card', null);
-    };
-  }, [tutorialStep]);
-
-  // Build display list: prepend Emma in tutorial mode
-  const displayPlayers: DiscoverPlayer[] =
-    (isGuest && tutorialStep === 'swipe_card')
-      ? [EMMA_DISCOVER_PLAYER, ...players.filter(p => p.id !== EMMA_USER_ID)]
-      : players;
+  // Build display list
+  const displayPlayers: DiscoverPlayer[] = players;
 
   const unswiped = displayPlayers.filter(p => !swipedIds.has(p.id));
   const topPlayer = unswiped[0] ?? null;
@@ -344,7 +318,7 @@ export function DiscoverPage() {
     });
   }, [unswiped, swipedIds]);
 
-  if (!user && !isGuest) {
+  if (!user) {
     return (
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
@@ -358,7 +332,7 @@ export function DiscoverPage() {
     );
   }
 
-  if (!isGuest && loading) {
+  if (loading) {
     return <DiscoverSkeleton />;
   }
 
@@ -396,7 +370,6 @@ export function DiscoverPage() {
                 onSwipeLeft={handleSwipeLeft}
                 undoId={undoId}
                 triggerSwipe={triggerSwipe}
-                onReset={isGuest ? resetTutorial : undefined}
               />
             </div>
             <InteractionBar
@@ -439,7 +412,6 @@ export function DiscoverPage() {
                 onSwipeLeft={handleSwipeLeft}
                 undoId={undoId}
                 triggerSwipe={triggerSwipe}
-                onReset={isGuest ? resetTutorial : undefined}
               />
             </div>
           </div>

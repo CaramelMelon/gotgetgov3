@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Trophy, LogIn, User, Settings, LogOut } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 import { NotificationBadge } from '../ui/NotificationBadge';
 import { getInitials } from '@/lib/avatar-utils';
 
@@ -15,24 +17,14 @@ interface HeaderProps {
 
 export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
   const navigate = useNavigate();
-  const { user, profile, isGuest, signOut } = useAuth();
-  const { tutorialStep, registerTarget } = useGuestTutorial();
+  const { user, profile, signOut } = useAuth();
+  const isMockMode = useMockMode();
   const logoSrc = '/GotGetGo Logo.png';
   const avatarInitials = getInitials(profile?.full_name ?? 'Me');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (tutorialStep === 'go_to_notifications') {
-      registerTarget('go_to_notifications', bellRef.current);
-    }
-    return () => {
-      if (tutorialStep === 'go_to_notifications') {
-        registerTarget('go_to_notifications', null);
-      }
-    };
-  }, [tutorialStep, registerTarget]);
 
   // Close on outside click
   useEffect(() => {
@@ -93,7 +85,7 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
             <NotificationBadge count={notificationCount} />
           </button>
 
-          {/* Avatar — no session → /auth, logged-in → dropdown */}
+          {/* Avatar — no session → /auth, mock mode → sign-in modal, logged-in → dropdown */}
           {!user ? (
             <button
               onClick={() => navigate('/auth')}
@@ -107,6 +99,21 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
               aria-label="Sign In"
             >
               <LogIn size={18} strokeWidth={2} />
+            </button>
+          ) : isMockMode ? (
+            <button
+              onClick={() => setIsSignInModalOpen(true)}
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'var(--color-acc)', border: 'none',
+                cursor: 'pointer', padding: 0, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700,
+                color: 'var(--color-bg)', overflow: 'hidden',
+              }}
+              aria-label="Profile menu"
+            >
+              {avatarInitials}
             </button>
           ) : (
             <div ref={menuRef} style={{ position: 'relative' }}>
@@ -171,6 +178,106 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Mock mode sign-in modal — rendered via portal to escape sticky header stacking context */}
+          {createPortal(
+            <AnimatePresence>
+              {isSignInModalOpen && (
+                <motion.div
+                  key="mock-signin-backdrop"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setIsSignInModalOpen(false)}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 500,
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    background: 'rgba(0,0,0,0.55)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 24,
+                  }}
+                >
+                  <motion.div
+                    key="mock-signin-card"
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 16, scale: 0.97 }}
+                    transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      position: 'relative',
+                      background: 'var(--color-surf)',
+                      borderRadius: 20,
+                      padding: '32px 28px',
+                      width: '100%', maxWidth: 340,
+                      boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <button
+                      onClick={() => setIsSignInModalOpen(false)}
+                      style={{
+                        position: 'absolute', top: 12, right: 12,
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--color-t3)', padding: 4,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                      aria-label="Close"
+                    >
+                      <X size={18} />
+                    </button>
+
+                    <div style={{
+                      width: 64, height: 64, borderRadius: '50%',
+                      background: 'var(--color-acc)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700,
+                      color: 'var(--color-bg)', marginBottom: 4,
+                    }}>
+                      {avatarInitials}
+                    </div>
+
+                    <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20, color: 'var(--color-t1)' }}>
+                      You're in demo mode
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t3)', lineHeight: 1.5, marginBottom: 8 }}>
+                      Sign in to save your progress, connect with real players, and unlock all features.
+                    </div>
+
+                    <button
+                      onClick={() => { navigate('/auth?mode=signin'); }}
+                      style={{
+                        width: '100%', padding: '14px 0',
+                        background: 'var(--color-acc)', border: 'none',
+                        borderRadius: 12, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 700,
+                        color: '#000',
+                      }}
+                    >
+                      Sign In
+                    </button>
+
+                    <button
+                      onClick={() => setIsSignInModalOpen(false)}
+                      style={{
+                        width: '100%', padding: '12px 0',
+                        background: 'none', border: '1px solid var(--color-bdr)',
+                        borderRadius: 12, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500,
+                        color: 'var(--color-t2)',
+                      }}
+                    >
+                      Continue as Guest
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body
           )}
         </div>
       </div>

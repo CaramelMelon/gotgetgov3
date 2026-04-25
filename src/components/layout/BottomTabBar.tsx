@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Compass, Newspaper, Calendar, Users, Plus } from 'lucide-react';
 import { NotificationBadge } from '../ui/NotificationBadge';
 import { TABS, type TabId } from '../../types';
-import { useGuestTutorial } from '../../contexts/GuestTutorialContext';
+import { useMockMode } from '../../contexts/MockModeContext';
 
 interface BottomTabBarProps {
   unreadMessages?: number;
@@ -20,21 +20,12 @@ const tabIcons: Record<TabId, React.ComponentType<{ size?: number; strokeWidth?:
 export function BottomTabBar({ unreadMessages = 0, onCreateClick }: BottomTabBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tutorialStep, registerTarget } = useGuestTutorial();
+  const isMock = useMockMode();
   const circlesTabRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (tutorialStep === 'go_to_messages') {
-      registerTarget('go_to_messages', circlesTabRef.current);
-    }
-    return () => {
-      if (tutorialStep === 'go_to_messages') {
-        registerTarget('go_to_messages', null);
-      }
-    };
-  }, [tutorialStep, registerTarget]);
+  const prefix = isMock ? '/mock' : '';
 
-  const activeTab = TABS.find((tab) => location.pathname.startsWith(tab.path))?.id || 'discover';
+  const activeTab = TABS.find((tab) => location.pathname.endsWith(tab.path))?.id || 'discover';
 
   const leftTabs = TABS.slice(0, 2);
   const rightTabs = TABS.slice(2, 4);
@@ -48,7 +39,7 @@ export function BottomTabBar({ unreadMessages = 0, onCreateClick }: BottomTabBar
       <button
         key={tab.id}
         ref={tab.id === 'circles' ? circlesTabRef : undefined}
-        onClick={() => navigate(tab.path)}
+        onClick={() => navigate(`${prefix}${tab.path}`)}
         className="tab-btn"
         aria-label={tab.label}
         aria-current={isActive ? 'page' : undefined}

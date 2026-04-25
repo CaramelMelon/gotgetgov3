@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, ChevronDown, Plus } from 'lucide-react';
+import { Search, Bell, Trophy, LogIn, User, Settings, LogOut, ChevronDown, Plus, X } from 'lucide-react';
 import { Header } from './Header';
 import { BottomTabBar } from './BottomTabBar';
 import { DesktopNav } from './DesktopNav';
@@ -12,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { FilterProvider, useFilters } from '../../contexts/FilterContext';
 import { NavVisibilityProvider, useNavVisibility } from '../../contexts/NavVisibilityContext';
-import { supabase } from '../../lib/supabase';
+import { useMockMode } from '../../contexts/MockModeContext';import { supabase } from '../../lib/supabase';
 import { SPORTS, type SportType } from '../../types';
 import { cn } from '../../lib/utils';
 import { getTotalUnreadCount, subscribeToUserMessageNotifications } from '../../lib/messaging';
@@ -26,7 +28,8 @@ interface AppShellProps {
 
 function AppShellContent({ children }: AppShellProps) {
   const navigate = useNavigate();
-  const { user, profile, isGuest, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const isMockMode = useMockMode();
   const logoSrc = '/GotGetGo Logo.png';
   const { updateFilters } = useFilters();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,6 +38,7 @@ function AppShellContent({ children }: AppShellProps) {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -213,7 +217,7 @@ function AppShellContent({ children }: AppShellProps) {
               <Plus size={14} strokeWidth={2.5} />
               Create
             </button>
-            {/* Profile button — no session → /auth; logged-in opens dropdown */}
+            {/* Profile button — no session → /auth; mock mode → sign-in modal; logged-in opens dropdown */}
             {!user ? (
               <button
                 onClick={() => navigate('/auth')}
@@ -227,6 +231,26 @@ function AppShellContent({ children }: AppShellProps) {
                 aria-label="Sign In"
               >
                 <LogIn size={20} strokeWidth={2} />
+              </button>
+            ) : isMockMode ? (
+              <button
+                onClick={() => setIsSignInModalOpen(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 4,
+                }}
+                aria-label="Profile menu"
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'var(--color-acc)', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700,
+                  color: 'var(--color-bg)',
+                }}>
+                  {avatarInitials}
+                </div>
+                <ChevronDown size={13} strokeWidth={2.5} style={{ color: 'var(--color-t3)' }} />
               </button>
             ) : (
               <div ref={profileMenuRef} style={{ position: 'relative', marginLeft: 4 }}>
@@ -294,6 +318,106 @@ function AppShellContent({ children }: AppShellProps) {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Mock mode sign-in modal — portal to escape fixed nav stacking context */}
+            {createPortal(
+              <AnimatePresence>
+                {isSignInModalOpen && (
+                  <motion.div
+                    key="mock-signin-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => setIsSignInModalOpen(false)}
+                    style={{
+                      position: 'fixed', inset: 0, zIndex: 500,
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      background: 'rgba(0,0,0,0.55)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 24,
+                    }}
+                  >
+                    <motion.div
+                      key="mock-signin-card"
+                      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 16, scale: 0.97 }}
+                      transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        position: 'relative',
+                        background: 'var(--color-surf)',
+                        borderRadius: 20,
+                        padding: '32px 28px',
+                        width: '100%', maxWidth: 360,
+                        boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                        textAlign: 'center',
+                      }}
+                    >
+                      <button
+                        onClick={() => setIsSignInModalOpen(false)}
+                        style={{
+                          position: 'absolute', top: 12, right: 12,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--color-t3)', padding: 4,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                        aria-label="Close"
+                      >
+                        <X size={18} />
+                      </button>
+
+                      <div style={{
+                        width: 64, height: 64, borderRadius: '50%',
+                        background: 'var(--color-acc)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700,
+                        color: 'var(--color-bg)', marginBottom: 4,
+                      }}>
+                        {avatarInitials}
+                      </div>
+
+                      <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20, color: 'var(--color-t1)' }}>
+                        You're in demo mode
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--color-t3)', lineHeight: 1.5, marginBottom: 8 }}>
+                        Sign in to save your progress, connect with real players, and unlock all features.
+                      </div>
+
+                      <button
+                        onClick={() => { navigate('/auth?mode=signin'); }}
+                        style={{
+                          width: '100%', padding: '14px 0',
+                          background: 'var(--color-acc)', border: 'none',
+                          borderRadius: 12, cursor: 'pointer',
+                          fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 700,
+                          color: '#000',
+                        }}
+                      >
+                        Sign In
+                      </button>
+
+                      <button
+                        onClick={() => setIsSignInModalOpen(false)}
+                        style={{
+                          width: '100%', padding: '12px 0',
+                          background: 'none', border: '1px solid var(--color-bdr)',
+                          borderRadius: 12, cursor: 'pointer',
+                          fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500,
+                          color: 'var(--color-t2)',
+                        }}
+                      >
+                        Continue as Guest
+                      </button>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              document.body
             )}
           </div>
         </div>
