@@ -13,6 +13,9 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithApple: () => Promise<{ error: Error | null }>;
+  signInWithPhone: (phone: string) => Promise<{ error: Error | null }>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
 }
@@ -129,6 +132,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   }
 
+  async function signInWithApple() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    return { error: error as Error | null };
+  }
+
+  async function signInWithPhone(phone: string) {
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    return { error: error as Error | null };
+  }
+
+  async function verifyPhoneOtp(phone: string, token: string) {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+    return { error: error as Error | null };
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setUser(null);
@@ -159,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithApple,
+    signInWithPhone,
+    verifyPhoneOtp,
     signOut,
     updateProfile,
   };

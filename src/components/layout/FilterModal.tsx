@@ -208,115 +208,31 @@ export function FilterModal({
         );
       })()}
 
-      {activeFilter === 'skill' && (() => {
-        const idx = Math.max(0, skills.indexOf(skill));
-        const pct = skills.length > 1 ? (idx / (skills.length - 1)) * 100 : 0;
-        const currentLabel = SKILL_LABEL[skills[idx]] ?? skills[idx];
-        return (
-          <div style={{ paddingTop: 16, paddingBottom: 8 }}>
-            {/* Current level label */}
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <p style={{
-                fontFamily: 'var(--font-body)', fontSize: 13,
-                color: 'var(--color-t3)', margin: '0 0 4px',
-                textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600,
-              }}>
-                Skill Level
-              </p>
-              <p style={{
-                fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700,
-                color: 'var(--color-acc)', margin: 0,
-              }}>
-                {currentLabel}
-              </p>
-            </div>
-
-            {/* Custom stepped track */}
-            <div style={{ position: 'relative', paddingBottom: 40, padding: '0 4px 40px' }}>
-              {/* Track background */}
-              <div style={{ position: 'relative', height: 6, background: 'var(--color-surf-2)', borderRadius: 999 }}>
-                {/* Filled portion */}
-                <div style={{
-                  position: 'absolute', left: 0, top: 0, bottom: 0,
-                  width: `${pct}%`, background: 'var(--color-acc)', borderRadius: 999,
-                  transition: 'width 0.15s',
-                }} />
-
-                {/* Step dots */}
-                {skills.map((s, i) => {
-                  const sp = skills.length > 1 ? (i / (skills.length - 1)) * 100 : 0;
-                  const active = i <= idx;
-                  return (
-                    <div key={s} style={{
-                      position: 'absolute', top: '50%',
-                      left: `${sp}%`, transform: 'translate(-50%, -50%)',
-                      width: active ? 12 : 10, height: active ? 12 : 10,
-                      borderRadius: '50%',
-                      background: active ? 'var(--color-acc)' : 'var(--color-bdr)',
-                      border: `2px solid var(--color-surf)`,
-                      zIndex: 1,
-                      transition: 'all 0.15s',
-                    }} />
-                  );
-                })}
-
-                {/* Hidden range input for interaction */}
-                <input
-                  type="range" min={0} max={skills.length - 1} step={1}
-                  value={idx}
-                  onChange={e => handleSelect(skills[Number(e.target.value)])}
-                  style={{
-                    position: 'absolute', inset: 0, width: '100%',
-                    opacity: 0, cursor: 'pointer', height: '100%',
-                    margin: 0, zIndex: 2,
-                  }}
-                />
-
-                {/* Thumb visual */}
-                <div style={{
-                  position: 'absolute', top: '50%',
-                  left: `${pct}%`, transform: 'translate(-50%, -50%)',
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: 'var(--color-acc)',
-                  boxShadow: '0 2px 10px rgba(22,212,106,0.5)',
-                  border: '3px solid var(--color-surf)',
-                  pointerEvents: 'none', zIndex: 3,
-                  transition: 'left 0.15s',
-                }} />
-              </div>
-
-              {/* Step labels */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
-                {skills.map((s, i) => (
-                  <span key={s} style={{
-                    fontFamily: 'var(--font-body)', fontSize: 10,
-                    color: i === idx ? 'var(--color-acc)' : 'var(--color-t3)',
-                    fontWeight: i === idx ? 700 : 400,
-                    textTransform: 'capitalize',
-                    textAlign: 'center', flex: 1,
-                  }}>
-                    {SKILL_LABEL[s]?.split(' ')[0] ?? s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Apply button */}
+      {activeFilter === 'skill' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {skills.map((s) => (
             <button
-              onClick={onClose}
+              key={s}
+              onClick={() => { onSkillChange(s); onClose(); }}
               style={{
-                width: '100%', padding: '14px 0',
-                borderRadius: 999, border: 'none',
-                background: 'var(--color-acc)', color: '#fff',
-                fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15,
-                cursor: 'pointer', marginTop: 8,
+                padding: '16px 20px',
+                borderRadius: 12,
+                background: skill === s ? 'var(--color-acc)' : 'var(--color-surf-2)',
+                border: skill === s ? '2px solid var(--color-acc)' : '1px solid var(--color-bdr)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 'var(--text-md)',
+                fontWeight: 600,
+                color: skill === s ? '#fff' : 'var(--color-t1)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s ease',
               }}
             >
-              Apply
+              {SKILL_LABEL[s] ?? s}
             </button>
-          </div>
-        );
-      })()}
+          ))}
+        </div>
+      )}
     </>
   );
 
