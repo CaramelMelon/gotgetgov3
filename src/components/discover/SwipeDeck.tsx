@@ -25,25 +25,16 @@ const SWIPE_THRESHOLD = 0.4;
 const VELOCITY_THRESHOLD = 300;
 
 function DraggableCard({
-  player, onSwipeRight, onSwipeLeft, isBack, forceSwipe, rewindFromX,
+  player, onSwipeRight, onSwipeLeft, isBack, forceSwipe,
 }: {
   player: DiscoverPlayer;
   onSwipeRight: (id: string) => void;
   onSwipeLeft:  (id: string) => void;
   isBack: boolean;
   forceSwipe?: { id: string; direction: 'left' | 'right' } | null;
-  rewindFromX?: number;
 }) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const x = useMotionValue(rewindFromX ?? 0);
-
-  // Animate slide-back from rewind start position to center
-  useEffect(() => {
-    if (rewindFromX) {
-      animate(x, 0, { type: 'spring', damping: 28, stiffness: 280 });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-15, 15]);
 
   const threshold = window.innerWidth * 0.4;
@@ -140,50 +131,56 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, undoDire
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [programSwipe, setProgramSwipe] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
   const [rewindCard, setRewindCard] = useState<{ id: string; fromX: number } | null>(null);
-  // Tracks IDs being rewound so in-flight animations don't re-dismiss them
+
+  // true while a button-triggered swipe animation is in flight — prevents double-calling parent
+  const isProgrammaticRef = useRef(false);
+  // IDs currently being rewound — blocks in-flight animation from re-dismissing
   const pendingUndoRef = useRef<Set<string>>(new Set());
 
-  // Undo: remove from dismissed, cancel in-flight programmatic swipe, play rewind animation
+  // Undo: restore card, cancel in-flight programmatic swipe, start slide-back animation
   useEffect(() => {
     if (undoId) {
       pendingUndoRef.current.add(undoId);
+      isProgrammaticRef.current = false;
       setDismissed(prev => {
         const next = new Set(prev);
         next.delete(undoId);
         return next;
       });
-      // Cancel any programmatic swipe for this card so it doesn't re-fly-out on reappearance
       setProgramSwipe(null);
       const screenW = window.innerWidth;
       const fromX = undoDirection === 'right' ? screenW * 1.5 : -screenW * 1.5;
       setRewindCard({ id: undoId, fromX });
-      const t = setTimeout(() => {
-        pendingUndoRef.current.delete(undoId);
-        setRewindCard(null);
-      }, 500);
-      return () => clearTimeout(t);
     }
   }, [undoId, undoDirection]);
 
   // Handle programmatic swipes from buttons — trigger animated fly-out
   useEffect(() => {
     if (triggerSwipe) {
+      isProgrammaticRef.current = true;
       setProgramSwipe({ ...triggerSwipe });
     }
   }, [triggerSwipe]);
 
   const handleSwipeRight = useCallback((id: string) => {
-    if (pendingUndoRef.current.has(id)) return; // in-flight animation after undo — ignore
+    if (pendingUndoRef.current.has(id)) return;
     setDismissed(prev => new Set([...prev, id]));
     setProgramSwipe(null);
-    onSwipeRight(id);
+    // Only call parent for manual drags; button presses already notified the parent
+    if (!isProgrammaticRef.current) {
+      onSwipeRight(id);
+    }
+    isProgrammaticRef.current = false;
   }, [onSwipeRight]);
 
   const handleSwipeLeft = useCallback((id: string) => {
-    if (pendingUndoRef.current.has(id)) return; // in-flight animation after undo — ignore
+    if (pendingUndoRef.current.has(id)) return;
     setDismissed(prev => new Set([...prev, id]));
     setProgramSwipe(null);
-    onSwipeLeft(id);
+    if (!isProgrammaticRef.current) {
+      onSwipeLeft(id);
+    }
+    isProgrammaticRef.current = false;
   }, [onSwipeLeft]);
 
   const visible = players.filter(p => !dismissed.has(p.id));
@@ -252,15 +249,39 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, undoDire
           isBack={true}
         />
       )}
-      <DraggableCard
-        key={front.id + (isRewinding ? '-rewinding' : '')}
-        player={front}
-        onSwipeRight={handleSwipeRight}
-        onSwipeLeft={handleSwipeLeft}
-        isBack={false}
-        forceSwipe={programSwipe?.id === front.id ? programSwipe : null}
-        rewindFromX={isRewinding ? rewindCard!.fromX : undefined}
-      />
+
+      {isRewinding ? (
+        /* Slide-back wrapper — handles the rewind animation independently of the drag x value */
+        <motion.div
+          key={front.id + '-rewind-wrapper'}
+          initial={{ x: rewindCard!.fromX }}
+          animate={{ x: 0 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+          style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+          onAnimationComplete={() => {
+            pendingUndoRef.current.delete(front.id);
+            setRewindCard(null);
+          }}
+        >
+          <DraggableCard
+            key={front.id + '-rewound'}
+            player={front}
+            onSwipeRight={handleSwipeRight}
+            onSwipeLeft={handleSwipeLeft}
+            isBack={false}
+            forceSwipe={null}
+          />
+        </motion.div>
+      ) : (
+        <DraggableCard
+          key={front.id}
+          player={front}
+          onSwipeRight={handleSwipeRight}
+          onSwipeLeft={handleSwipeLeft}
+          isBack={false}
+          forceSwipe={programSwipe?.id === front.id ? programSwipe : null}
+        />
+      )}
     </div>
   );
 }
