@@ -17,8 +17,7 @@ export function Header({ onSearchClick, notificationCount = 0 }: HeaderProps) {
   const navigate = useNavigate();
   const { user, profile, isGuest, signOut } = useAuth();
   const { tutorialStep, registerTarget } = useGuestTutorial();
-  const { theme } = useThemeContext();
-  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const logoSrc = '/GotGetGo Logo.png';
   const avatarInitials = getInitials(profile?.full_name ?? 'Me');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

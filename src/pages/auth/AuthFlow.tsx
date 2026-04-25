@@ -392,8 +392,7 @@ function WelcomeScreen({ onNavigate, onContinueAsGuest }: {
   onNavigate: (s: AuthScreen) => void;
   onContinueAsGuest: () => void;
 }) {
-  const { theme } = useThemeContext();
-  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const logoSrc = '/GotGetGo Logo.png';
   return (
     <div style={{
       position: 'absolute',
@@ -698,8 +697,7 @@ function SignUpScreen({ onNavigate }: { onNavigate: (s: AuthScreen) => void }) {
 
 export function AuthFlow() {
   const { enterGuestMode: continueAsGuest } = useAuth();
-  const { theme } = useThemeContext();
-  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const logoSrc = '/GotGetGo Logo.png';
   const [screen, setScreen] = useState<AuthScreen>('welcome');
   const isCard = screen === 'signin' || screen === 'signup';
 
