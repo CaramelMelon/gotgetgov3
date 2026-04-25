@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { IconUserPlus } from '../../design-system';
 import type { DiscoverPlayer } from '../../types/discover';
@@ -11,6 +11,7 @@ interface SwipeDeckProps {
   onSwipeRight: (id: string) => void;
   onSwipeLeft: (id: string) => void;
   undoId?: string | null;
+  undoDirection?: 'left' | 'right' | null;
   triggerSwipe?: { id: string; direction: 'left' | 'right' } | null;
   onReset?: () => void;
 }
@@ -24,16 +25,25 @@ const SWIPE_THRESHOLD = 0.4;
 const VELOCITY_THRESHOLD = 300;
 
 function DraggableCard({
-  player, onSwipeRight, onSwipeLeft, isBack, forceSwipe,
+  player, onSwipeRight, onSwipeLeft, isBack, forceSwipe, rewindFromX,
 }: {
   player: DiscoverPlayer;
   onSwipeRight: (id: string) => void;
   onSwipeLeft:  (id: string) => void;
   isBack: boolean;
   forceSwipe?: { id: string; direction: 'left' | 'right' } | null;
+  rewindFromX?: number;
 }) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const x = useMotionValue(0);
+  const x = useMotionValue(rewindFromX ?? 0);
+
+  // Animate slide-back from rewind start position to center
+  useEffect(() => {
+    if (rewindFromX) {
+      animate(x, 0, { type: 'spring', damping: 28, stiffness: 280 });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const rotate = useTransform(x, [-300, 300], [-15, 15]);
 
   const threshold = window.innerWidth * 0.4;
@@ -126,20 +136,32 @@ function DraggableCard({
   );
 }
 
-export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, triggerSwipe, onReset }: SwipeDeckProps) {
+export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, undoDirection, triggerSwipe, onReset }: SwipeDeckProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [programSwipe, setProgramSwipe] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
+  const [rewindCard, setRewindCard] = useState<{ id: string; fromX: number } | null>(null);
+  // Tracks IDs being rewound so in-flight animations don't re-dismiss them
+  const pendingUndoRef = useRef<Set<string>>(new Set());
 
-  // Undo: remove from dismissed when undoId changes
+  // Undo: remove from dismissed, block re-dismiss from in-flight animation, play rewind animation
   useEffect(() => {
     if (undoId) {
+      pendingUndoRef.current.add(undoId);
       setDismissed(prev => {
         const next = new Set(prev);
         next.delete(undoId);
         return next;
       });
+      const screenW = window.innerWidth;
+      const fromX = undoDirection === 'right' ? screenW * 1.5 : -screenW * 1.5;
+      setRewindCard({ id: undoId, fromX });
+      const t = setTimeout(() => {
+        pendingUndoRef.current.delete(undoId);
+        setRewindCard(null);
+      }, 500);
+      return () => clearTimeout(t);
     }
-  }, [undoId]);
+  }, [undoId, undoDirection]);
 
   // Handle programmatic swipes from buttons — trigger animated fly-out
   useEffect(() => {
@@ -149,12 +171,14 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, triggerS
   }, [triggerSwipe]);
 
   const handleSwipeRight = useCallback((id: string) => {
+    if (pendingUndoRef.current.has(id)) return; // in-flight animation after undo — ignore
     setDismissed(prev => new Set([...prev, id]));
     setProgramSwipe(null);
     onSwipeRight(id);
   }, [onSwipeRight]);
 
   const handleSwipeLeft = useCallback((id: string) => {
+    if (pendingUndoRef.current.has(id)) return; // in-flight animation after undo — ignore
     setDismissed(prev => new Set([...prev, id]));
     setProgramSwipe(null);
     onSwipeLeft(id);
@@ -213,6 +237,7 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, triggerS
 
   // Render top 2 cards (back first so front sits on top)
   const [front, back] = [visible[0], visible[1]];
+  const isRewinding = rewindCard?.id === front?.id;
 
   return (
     <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -226,12 +251,13 @@ export function SwipeDeck({ players, onSwipeRight, onSwipeLeft, undoId, triggerS
         />
       )}
       <DraggableCard
-        key={front.id}
+        key={front.id + (isRewinding ? '-rewinding' : '')}
         player={front}
         onSwipeRight={handleSwipeRight}
         onSwipeLeft={handleSwipeLeft}
         isBack={false}
         forceSwipe={programSwipe?.id === front.id ? programSwipe : null}
+        rewindFromX={isRewinding ? rewindCard!.fromX : undefined}
       />
     </div>
   );

@@ -77,6 +77,7 @@ export function DiscoverPage() {
   const [swipedIds, setSwipedIds]     = useState<Set<string>>(new Set());
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [undoId, setUndoId]           = useState<string | null>(null);
+  const [undoDirection, setUndoDirection] = useState<'left' | 'right' | null>(null);
   const [lastSwipe, setLastSwipe]     = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
   const [triggerSwipe, setTriggerSwipe] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
 
@@ -274,7 +275,8 @@ export function DiscoverPage() {
       .eq('sport', player.sport as any);
     setSwipedIds(prev => { const n = new Set(prev); n.delete(lastSwipe.id); return n; });
     setUndoId(lastSwipe.id);
-    setTimeout(() => setUndoId(null), 100);
+    setUndoDirection(lastSwipe.direction);
+    setTimeout(() => { setUndoId(null); setUndoDirection(null); }, 500);
     setLastSwipe(null);
   }, [lastSwipe, user, players]);
 
@@ -395,6 +397,7 @@ export function DiscoverPage() {
                 onSwipeRight={handleSwipeRight}
                 onSwipeLeft={handleSwipeLeft}
                 undoId={undoId}
+                undoDirection={undoDirection}
                 triggerSwipe={triggerSwipe}
               />
             </div>
@@ -437,6 +440,7 @@ export function DiscoverPage() {
                 onSwipeRight={handleSwipeRight}
                 onSwipeLeft={handleSwipeLeft}
                 undoId={undoId}
+                undoDirection={undoDirection}
                 triggerSwipe={triggerSwipe}
               />
             </div>
